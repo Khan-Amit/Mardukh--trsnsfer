@@ -1,23 +1,559 @@
 <!DOCTYPE html>
-<html>
-<head><title>Marduk ATM</title></head>
-<body style="background:#0a0e1a;color:#88ffaa;font-family:monospace;padding:20px;">
-    <h1>🏦 MARDUK ATM</h1>
-    <div style="border:1px solid #ffcc00;padding:20px;border-radius:10px;">
-        <p>📬 Wallet: 45ktWDeTNtUc...ZoAoZb</p>
-        <p id="balance">💰 Balance: 0.00000000 XMR</p>
-        <p id="thb">฿ 0.00 THB</p>
-        <button onclick="fetchBalance()">🔄 Refresh</button>
-    </div>
-    <script>
-        async function fetchBalance() {
-            const res = await fetch('/balance');
-            const data = await res.json();
-            document.getElementById('balance').innerText = '💰 Balance: ' + data.balance + ' XMR';
-            document.getElementById('thb').innerText = '฿ ' + (data.balance * 5500).toFixed(2) + ' THB';
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marduk · ATM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        fetchBalance();
-        setInterval(fetchBalance, 30000);
+
+        body {
+            background: #0a0e1a;
+            color: #88ffaa;
+            font-family: 'Courier New', monospace;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #0f1322;
+            border-radius: 2rem;
+            border: 2px solid #ffcc00;
+            padding: 2rem;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.8);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #1a2a4a;
+        }
+
+        .header .title {
+            color: #ffcc00;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .header .sub {
+            color: #8da0c0;
+            font-size: 0.8rem;
+        }
+
+        .header .time {
+            color: #8da0c0;
+            font-size: 0.8rem;
+        }
+
+        .wallet-box {
+            background: #010410;
+            border-radius: 0.8rem;
+            padding: 0.8rem 1rem;
+            font-size: 0.65rem;
+            color: #8da0c0;
+            word-break: break-all;
+            border: 1px solid #1a2a4a;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 500px) {
+            .balance-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .balance-item {
+            background: #010410;
+            border-radius: 0.8rem;
+            padding: 0.8rem 1rem;
+            border: 1px solid #1a2a4a;
+            text-align: center;
+        }
+
+        .balance-item .label {
+            color: #8da0c0;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .balance-item .value {
+            color: #88ffaa;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 0.2rem;
+        }
+
+        .balance-item .value.xmr {
+            color: #ff6633;
+        }
+        .balance-item .value.btc {
+            color: #f7931a;
+        }
+        .balance-item .value.bch {
+            color: #8dc351;
+        }
+        .balance-item .value.usdt {
+            color: #26a17b;
+        }
+        .balance-item .value.thb {
+            color: #88ff88;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            background: #0a0e1a;
+            color: #88ffaa;
+            border: 1px solid #1a2a4a;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1;
+            min-width: 80px;
+        }
+
+        .btn:hover {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
+
+        .btn.primary {
+            border-color: #ffcc00;
+            color: #ffcc00;
+        }
+
+        .btn.success {
+            border-color: #2a6a3a;
+            color: #88ff88;
+        }
+
+        .btn.gold {
+            border-color: #ffcc00;
+            color: #ffcc00;
+        }
+
+        .btn.blue {
+            border-color: #1a5a8a;
+            color: #66ccff;
+        }
+
+        .btn.danger {
+            border-color: #8a2a2a;
+            color: #ff6666;
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: #010410;
+            border-radius: 0.8rem;
+            font-size: 0.7rem;
+            color: #8da0c0;
+            border: 1px solid #1a2a4a;
+            text-align: center;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1a2a4a;
+            font-size: 0.6rem;
+            color: #4a5a6a;
+        }
+
+        .qr-area {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0.8rem;
+            background: #010410;
+            border-radius: 2rem;
+            border: 1px dashed #1a2a4a;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: #4a5a6a;
+            flex-wrap: wrap;
+        }
+
+        .qr-area .qr-icon {
+            font-size: 1.2rem;
+        }
+
+        .qr-area .qr-hint {
+            color: #8da0c0;
+            word-break: break-all;
+            font-size: 0.7rem;
+            flex: 1;
+        }
+
+        .transfer-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .transfer-row input {
+            flex: 1;
+            min-width: 100px;
+            background: #010410;
+            border: 1px solid #1a2a4a;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #88ffaa;
+            outline: none;
+        }
+
+        .transfer-row input::placeholder {
+            color: #4a5a6a;
+        }
+
+        .transfer-row input:focus {
+            border-color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div>
+                <span class="title">🏦 MARDUK · ATM</span>
+                <span class="sub">No Swift · No Middlemen</span>
+            </div>
+            <div class="time" id="headerTime">--:--:--</div>
+        </div>
+
+        <!-- WALLET -->
+        <div class="wallet-box" id="walletDisplay">
+            45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
+        </div>
+
+        <!-- BALANCES -->
+        <div class="balance-grid" id="balanceContainer">
+            <div class="balance-item">
+                <div class="label">⛏️ Monero (XMR)</div>
+                <div class="value xmr" id="xmrBal">0.00000000</div>
+            </div>
+            <div class="balance-item">
+                <div class="label">₿ Bitcoin (BTC)</div>
+                <div class="value btc" id="btcBal">0.00000000</div>
+            </div>
+            <div class="balance-item">
+                <div class="label">💎 Bitcoin Cash (BCH)</div>
+                <div class="value bch" id="bchBal">0.00000000</div>
+            </div>
+            <div class="balance-item">
+                <div class="label">💰 Tether (USDT)</div>
+                <div class="value usdt" id="usdtBal">0.00</div>
+            </div>
+            <div class="balance-item" style="grid-column: 1 / -1;">
+                <div class="label">🇹🇭 THB Value</div>
+                <div class="value thb" id="thbVal">฿ 0.00</div>
+            </div>
+        </div>
+
+        <!-- SEND / RECEIVE / PAY -->
+        <div style="margin-bottom:1rem;">
+            <div class="transfer-row">
+                <input type="text" id="receiverWallet" placeholder="Receiver Wallet Address" />
+                <input type="text" id="sendAmount" placeholder="Amount (XMR)" />
+            </div>
+            <div class="btn-group">
+                <button class="btn success" onclick="sendPayment()">💸 SEND</button>
+                <button class="btn primary" onclick="receivePayment()">📥 RECEIVE</button>
+                <button class="btn gold" onclick="payNow()">💳 PAY NOW</button>
+            </div>
+            <div class="qr-area" id="qrArea">
+                <span class="qr-icon">📱</span>
+                <span class="qr-hint">Scan QR to pay · Click "RECEIVE" to generate</span>
+            </div>
+            <div class="status" id="transferStatus">⏳ Ready</div>
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="btn-group">
+            <button class="btn primary" onclick="fetchAll()">⟳ REFRESH</button>
+            <button class="btn success" onclick="copyWallet()">📋 COPY</button>
+        </div>
+
+        <!-- RIG ACTIVITY -->
+        <div style="margin-top:1.5rem;background:#010410;border-radius:0.8rem;padding:1rem;border:1px solid #1a2a4a;">
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#8da0c0;margin-bottom:0.3rem;">
+                <span id="rigStatus" style="color:#ff6666;">⏹️ Stopped</span>
+                <span id="rigShares">Shares: 0</span>
+                <span id="rigHash">0.0 H/s</span>
+            </div>
+            <div style="background:#010410;border-radius:0.5rem;padding:0.5rem;font-size:0.7rem;color:#8da0c0;max-height:150px;overflow-y:auto;border:1px solid #1a2a4a;" id="rigLog">
+                <div>🌀 Marduk Rig v2.0</div>
+                <div>⏳ Waiting for shares...</div>
+            </div>
+            <div style="margin-top:0.5rem;font-size:0.7rem;color:#8da0c0;">
+                Accumulated: <span id="accumulated" style="color:#ffcc00;font-weight:bold;">0.00000000 XMR</span>
+            </div>
+            <div class="btn-group" style="margin-top:0.5rem;">
+                <button class="btn gold" onclick="toggleMining()" id="rigToggleBtn">⛏️ START RIG</button>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer">
+            © 2026 Seliim Ahmed · All Rights Reserved · <span id="footerTime">--:--:--</span>
+        </div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        // 🔐 CONFIG
+        // ============================================================
+        const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
+
+        let mining = false;
+        let shares = 0;
+        let accumulated = 0;
+        let hashRate = 0;
+        let simInterval = null;
+
+        // ============================================================
+        // 📡 DOM REFS
+        // ============================================================
+        const $ = id => document.getElementById(id);
+        const xmrBal = $('xmrBal');
+        const btcBal = $('btcBal');
+        const bchBal = $('bchBal');
+        const usdtBal = $('usdtBal');
+        const thbVal = $('thbVal');
+        const rigLog = $('rigLog');
+        const rigStatus = $('rigStatus');
+        const rigShares = $('rigShares');
+        const rigHash = $('rigHash');
+        const accumulatedEl = $('accumulated');
+        const transferStatus = $('transferStatus');
+        const receiverWallet = $('receiverWallet');
+        const sendAmount = $('sendAmount');
+        const qrArea = $('qrArea');
+        const rigToggleBtn = $('rigToggleBtn');
+
+        // ============================================================
+        // 🕐 CLOCK
+        // ============================================================
+        function updateClocks() {
+            const now = new Date().toLocaleTimeString();
+            $('headerTime').textContent = now;
+            $('footerTime').textContent = now;
+        }
+        setInterval(updateClocks, 1000);
+        updateClocks();
+
+        // ============================================================
+        // 📝 LOG
+        // ============================================================
+        function addLog(msg, type = '') {
+            const div = document.createElement('div');
+            if (type === 'share') div.style.color = '#88ff88';
+            else if (type === 'hash') div.style.color = '#ffcc00';
+            else if (type === 'real') div.style.color = '#66ccff';
+            else if (type === 'error') div.style.color = '#ff6666';
+            div.textContent = `> ${new Date().toLocaleTimeString()} · ${msg}`;
+            rigLog.appendChild(div);
+            rigLog.scrollTop = rigLog.scrollHeight;
+            while (rigLog.children.length > 50) {
+                rigLog.removeChild(rigLog.firstChild);
+            }
+        }
+
+        // ============================================================
+        // 🔗 FETCH WALLET BALANCE
+        // ============================================================
+        async function fetchWalletBalance() {
+            try {
+                const res = await fetch(`https://xmrchain.net/api/address/${WALLET}`);
+                const data = await res.json();
+                const xmr = data.balance / 1000000000000;
+                xmrBal.textContent = xmr.toFixed(8);
+                const thb = xmr * 5500;
+                thbVal.textContent = `฿ ${thb.toFixed(2)}`;
+                return xmr;
+            } catch (e) {
+                addLog('⚠️ Wallet balance fetch failed', 'error');
+                return 0;
+            }
+        }
+
+        // ============================================================
+        // 🔍 FETCH ALL
+        // ============================================================
+        async function fetchAll() {
+            addLog('🔄 Fetching data...', 'real');
+            await fetchWalletBalance();
+            btcBal.textContent = '0.00000000';
+            bchBal.textContent = '0.00000000';
+            usdtBal.textContent = '0.00';
+            addLog('✅ Data updated', 'real');
+        }
+
+        // ============================================================
+        // ⛏️ RIG CONTROL
+        // ============================================================
+        function toggleMining() {
+            if (mining) {
+                stopMining();
+            } else {
+                startMining();
+            }
+        }
+
+        function startMining() {
+            if (mining) return;
+            mining = true;
+            rigStatus.textContent = '⛏️ Mining...';
+            rigStatus.style.color = '#88ff88';
+            rigToggleBtn.textContent = '⏹ STOP RIG';
+            addLog('⛏️ Rig started', 'real');
+
+            simInterval = setInterval(() => {
+                if (!mining) return;
+                shares++;
+                const earn = (Math.random() * 0.0000000005) + 0.0000000001;
+                accumulated += earn;
+                hashRate = (5 + Math.random() * 15) * (0.8 + Math.random() * 0.4);
+
+                rigShares.textContent = `Shares: ${shares}`;
+                rigHash.textContent = `${hashRate.toFixed(1)} H/s`;
+                accumulatedEl.textContent = `${accumulated.toFixed(8)} XMR`;
+
+                if (shares % 3 === 0) {
+                    addLog(`✅ SHARE #${shares} · +${earn.toFixed(10)} XMR`, 'share');
+                }
+                if (shares % 10 === 0) {
+                    addLog(`⛏️ ${hashRate.toFixed(1)} H/s · ${shares} shares · ${accumulated.toFixed(8)} XMR`, 'hash');
+                }
+
+                const current = parseFloat(xmrBal.textContent) || 0;
+                xmrBal.textContent = (current + earn).toFixed(8);
+                const thb = (current + earn) * 5500;
+                thbVal.textContent = `฿ ${thb.toFixed(2)}`;
+
+            }, 1000);
+        }
+
+        function stopMining() {
+            mining = false;
+            rigStatus.textContent = '⏹️ Stopped';
+            rigStatus.style.color = '#ff6666';
+            rigToggleBtn.textContent = '⛏️ START RIG';
+            if (simInterval) {
+                clearInterval(simInterval);
+                simInterval = null;
+            }
+            addLog('⏹️ Rig stopped', 'real');
+        }
+
+        // ============================================================
+        // 💸 TRANSFER FUNCTIONS
+        // ============================================================
+        function sendPayment() {
+            const receiver = receiverWallet.value.trim();
+            const amount = sendAmount.value.trim();
+            if (!receiver || !amount) {
+                transferStatus.textContent = '⚠️ Please enter receiver wallet and amount';
+                return;
+            }
+            transferStatus.textContent = `⏳ Sending ${amount} XMR to ${receiver.substring(0, 12)}...`;
+            addLog(`💸 Sending ${amount} XMR to ${receiver.substring(0, 12)}...`, 'real');
+            setTimeout(() => {
+                transferStatus.textContent = `✅ Sent ${amount} XMR (simulated)`;
+                addLog(`✅ Sent ${amount} XMR`, 'share');
+                receiverWallet.value = '';
+                sendAmount.value = '';
+            }, 1500);
+        }
+
+        function receivePayment() {
+            const amount = sendAmount.value.trim() || '0.01';
+            const qrText = `xmr:${WALLET}?amount=${amount}`;
+            qrArea.innerHTML = `
+                <span class="qr-icon">📱</span>
+                <span class="qr-hint">QR: ${qrText}</span>
+                <button class="btn primary" style="padding:0.2rem 0.8rem;font-size:0.6rem;flex:0 0 auto;" onclick="copyQR()">📋 COPY</button>
+            `;
+            transferStatus.textContent = `📥 Receive ${amount} XMR · QR generated`;
+            addLog(`📥 QR generated for ${amount} XMR`, 'real');
+        }
+
+        function copyQR() {
+            const qrText = qrArea.querySelector('.qr-hint')?.textContent || '';
+            navigator.clipboard.writeText(qrText.replace('QR: ', ''));
+            transferStatus.textContent = '📋 QR copied';
+            addLog('📋 QR copied');
+        }
+
+        function payNow() {
+            const amount = sendAmount.value.trim() || '0.01';
+            transferStatus.textContent = `💳 Processing payment of ${amount} XMR...`;
+            addLog(`💳 Paying ${amount} XMR...`, 'real');
+            setTimeout(() => {
+                transferStatus.textContent = `✅ Paid ${amount} XMR (simulated)`;
+                addLog(`✅ Paid ${amount} XMR`, 'share');
+                sendAmount.value = '';
+            }, 1500);
+        }
+
+        // ============================================================
+        // 📋 COPY WALLET
+        // ============================================================
+        function copyWallet() {
+            navigator.clipboard.writeText(WALLET);
+            addLog('📋 Wallet copied');
+        }
+
+        // ============================================================
+        // 🚀 INIT
+        // ============================================================
+        addLog('🌀 Marduk ATM v2.0');
+        addLog('📬 Wallet loaded');
+        fetchAll();
+
+        // Auto-refresh every 60 seconds
+        setInterval(fetchAll, 60000);
     </script>
+
 </body>
 </html>
