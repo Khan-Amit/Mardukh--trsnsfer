@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><title>Marduk ATM</title></head>
+<body style="background:#0a0e1a;color:#88ffaa;font-family:monospace;padding:20px;">
+    <h1>🏦 MARDUK ATM</h1>
+    <div style="border:1px solid #ffcc00;padding:20px;border-radius:10px;">
+        <p>📬 Wallet: 45ktWDeTNtUc...ZoAoZb</p>
+        <p id="balance">💰 Balance: 0.00000000 XMR</p>
+        <p id="thb">฿ 0.00 THB</p>
+        <button onclick="fetchBalance()">🔄 Refresh</button>
+    </div>
+    <script>
+        async function fetchBalance() {
+            const res = await fetch('/balance');
+            const data = await res.json();
+            document.getElementById('balance').innerText = '💰 Balance: ' + data.balance + ' XMR';
+            document.getElementById('thb').innerText = '฿ ' + (data.balance * 5500).toFixed(2) + ' THB';
+        }
+        fetchBalance();
+        setInterval(fetchBalance, 30000);
+    </script>
+</body>
+</html>
