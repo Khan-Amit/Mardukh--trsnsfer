@@ -140,8 +140,6 @@
         .btn.primary { border-color: #ffcc00; color: #ffcc00; }
         .btn.success { border-color: #2a6a3a; color: #88ff88; }
         .btn.gold { border-color: #ffcc00; color: #ffcc00; }
-        .btn.danger { border-color: #8a2a2a; color: #ff6666; }
-        .btn.blue { border-color: #1a5a8a; color: #66ccff; }
 
         .transfer-section {
             margin-top: 1rem;
@@ -194,8 +192,8 @@
             background: #010410;
             border-radius: 0.8rem;
             padding: 0.8rem 1rem;
-            min-height: 220px;
-            max-height: 300px;
+            min-height: 200px;
+            max-height: 280px;
             overflow-y: auto;
             font-size: 0.7rem;
             color: #8da0c0;
@@ -245,69 +243,12 @@
             .transfer-row input { min-width: 70px; font-size: 0.65rem; }
             .rig-log { min-height: 150px; max-height: 200px; }
         }
-
-        /* Password overlay */
-        .password-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .password-box {
-            background: #0f1322;
-            border: 2px solid #ffcc00;
-            border-radius: 2rem;
-            padding: 3rem;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-        }
-        .password-box h2 { color: #ffcc00; margin-bottom: 1rem; }
-        .password-box input {
-            background: #010410;
-            border: 1px solid #2a3a60;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 2rem;
-            width: 100%;
-            font-size: 1.2rem;
-            text-align: center;
-            margin: 1rem 0;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 4px;
-        }
-        .password-box input:focus { outline: none; border-color: #ffcc00; }
-        .password-box .error { color: #ff6666; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
-        .password-box .error.show { display: block; }
-        .password-box .hint { color: #8da0c0; font-size: 0.7rem; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
 
-    <!-- ============================================================
-         PASSWORD OVERLAY (Hidden if already unlocked)
-         ============================================================ -->
-    <div class="password-overlay" id="passwordOverlay">
-        <div class="password-box">
-            <h2>🔐 MARDUK ATM</h2>
-            <p style="color: #8da0c0; margin-bottom: 0.5rem;">Enter vault password</p>
-            <input type="password" id="passwordInput" maxlength="6" placeholder="••••••" autofocus>
-            <button id="unlockBtn" class="primary" style="width:100%;">🔓 UNLOCK</button>
-            <div class="error" id="passwordError">❌ Invalid password. Try again.</div>
-            <div class="hint">🔐 Hint: 6-digit code · 197328</div>
-        </div>
-    </div>
-
-    <!-- ============================================================
-         MAIN ATM
-         ============================================================ -->
-    <div class="container" id="mainApp" style="display:none;">
+    <div class="container">
+        <!-- HEADER -->
         <div class="header">
             <div>
                 <span class="title">⚖️ MARDUK · ATM</span>
@@ -326,8 +267,6 @@
             </div>
             <div class="wallet-actions">
                 <button class="btn-small" onclick="copyWallet()">📋 COPY</button>
-                <button class="btn-small" onclick="checkEnigmaWallet()">🔐 ENIGMA</button>
-                <button class="btn-small" onclick="checkMoneroWallet()">🟠 MONERO</button>
                 <button class="btn-small" onclick="window.open('https://xmrchain.net/address/45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb','_blank')">🔗 VIEW</button>
             </div>
         </div>
@@ -419,53 +358,7 @@
 
     <script>
         // ============================================================
-        // 🔐 HARDCODED PASSWORD + PERSISTENT SESSION
-        // ============================================================
-        const VAULT_PASSWORD = "197328";
-        const STORAGE_KEY = "marduk_unlocked";
-
-        // Check if already unlocked in this session
-        if (localStorage.getItem(STORAGE_KEY) === "true") {
-            document.getElementById('passwordOverlay').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-        }
-
-        // Unlock function
-        function unlockVault(password) {
-            if (password === VAULT_PASSWORD) {
-                localStorage.setItem(STORAGE_KEY, "true");
-                document.getElementById('passwordOverlay').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                document.getElementById('passwordError').classList.remove('show');
-                // Initialize the app
-                initApp();
-                return true;
-            } else {
-                document.getElementById('passwordError').classList.add('show');
-                document.getElementById('passwordInput').value = '';
-                document.getElementById('passwordInput').focus();
-                return false;
-            }
-        }
-
-        // Password input events
-        document.getElementById('unlockBtn').addEventListener('click', function() {
-            unlockVault(document.getElementById('passwordInput').value);
-        });
-        document.getElementById('passwordInput').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                unlockVault(this.value);
-            }
-        });
-
-        // If already unlocked, start the app
-        if (localStorage.getItem(STORAGE_KEY) === "true") {
-            // The main app is already visible, but we need to init after DOM is ready
-            document.addEventListener('DOMContentLoaded', initApp);
-        }
-
-        // ============================================================
-        // 📡 APP LOGIC
+        // 🔐 CONFIG
         // ============================================================
         const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
 
@@ -529,7 +422,7 @@
         updateClocks();
 
         // ============================================================
-        // 📝 LOG
+        // 📝 LOG — CLEAN VERSION (NO DUPLICATES)
         // ============================================================
         function addLog(msg, type = '') {
             const div = document.createElement('div');
@@ -610,6 +503,7 @@
                 rigHash.textContent = `${hashRate.toFixed(1)} H/s`;
                 accumulatedEl.textContent = `${accumulated.toFixed(8)} XMR`;
 
+                // Only log every 3 shares — clean!
                 if (shares % 3 === 0) {
                     addLog(`✅ SHARE #${shares} · +${earn.toFixed(10)} XMR`, 'share');
                 }
@@ -648,7 +542,7 @@
                 transferStatus.textContent = '⚠️ Please enter receiver wallet and amount';
                 return;
             }
-            transferStatus.textContent = `⏳ Sending ${amount} XMR to ${receiver.substring(0, 12)}...`;
+            transferStatus.textContent = `⏳ Sending ${amount} XMR...`;
             addLog(`💸 Sending ${amount} XMR to ${receiver.substring(0, 12)}...`, 'real');
             setTimeout(() => {
                 transferStatus.textContent = `✅ Sent ${amount} XMR (simulated)`;
@@ -699,74 +593,29 @@
         }
 
         // ============================================================
-        // 🔐 CHECK ENIGMA WALLET
-        // ============================================================
-        function checkEnigmaWallet() {
-            addLog('🔐 Checking Enigma wallet...', 'real');
-            transferStatus.textContent = '🔐 Enigma wallet checked';
-            const seed = "2210122101221012210122101221012210122101221012210122101221012210";
-            const privateKey = "a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890";
-            const publicAddress = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-            alert(
-                "🔐 ENIGMA WALLET\n" +
-                "═══════════════════════════\n" +
-                "📬 Public Address:\n" + publicAddress + "\n\n" +
-                "🔑 Private Key:\n" + privateKey + "\n\n" +
-                "🌀 Seed:\n" + seed + "\n\n" +
-                "🧠 Egg Shorter: Active\n" +
-                "⛏️ Sluice-Bench: Active\n" +
-                "🔢 Ternary: Active\n" +
-                "🔐 Enigma Encrypter: Active"
-            );
-            addLog('🔐 Enigma wallet details displayed', 'real');
-        }
-
-        // ============================================================
-        // 🟠 CHECK MONERO WALLET
-        // ============================================================
-        function checkMoneroWallet() {
-            addLog('🟠 Checking Monero wallet on blockchain...', 'real');
-            transferStatus.textContent = '🟠 Checking Monero wallet...';
-            window.open(`https://xmrchain.net/address/${WALLET}`, '_blank');
-            addLog('🟠 Monero wallet opened in new tab', 'real');
-            setTimeout(() => { transferStatus.textContent = '⏳ Ready'; }, 3000);
-        }
-
-        // ============================================================
         // 🚀 INIT
         // ============================================================
-        function initApp() {
-            addLog('⚖️ Marduk ATM v3.0');
-            addLog('📬 Wallet loaded');
-            const pool = POOLS[poolSelect.value];
-            addLog(`🔗 Pool: ${pool.name}`, 'real');
-            fetchAll();
+        addLog('⚖️ Marduk ATM v3.0');
+        addLog('📬 Wallet loaded');
+        const pool = POOLS[poolSelect.value];
+        addLog(`🔗 Pool: ${pool.name}`, 'real');
+        fetchAll();
 
-            setInterval(fetchAll, 60000);
+        setInterval(fetchAll, 60000);
 
-            poolSelect.addEventListener('change', function() {
-                const pool = POOLS[this.value];
-                addLog(`🔄 Switched to ${pool.name} (${pool.symbol})`, 'real');
-                rigPool.textContent = `Pool: ${pool.name}`;
-                if (!mining) {
-                    shares = 0;
-                    accumulated = 0;
-                    accumulatedEl.textContent = '0.00000000 XMR';
-                    rigShares.textContent = 'Shares: 0';
-                    rigHash.textContent = '0.0 H/s';
-                }
-            });
-        }
-
-        // If already unlocked, init right away
-        if (localStorage.getItem(STORAGE_KEY) === "true") {
-            // But we must wait for DOM
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initApp);
-            } else {
-                initApp();
+        poolSelect.addEventListener('change', function() {
+            const pool = POOLS[this.value];
+            addLog(`🔄 Switched to ${pool.name} (${pool.symbol})`, 'real');
+            rigPool.textContent = `Pool: ${pool.name}`;
+            if (!mining) {
+                shares = 0;
+                accumulated = 0;
+                accumulatedEl.textContent = '0.00000000 XMR';
+                rigShares.textContent = 'Shares: 0';
+                rigHash.textContent = '0.0 H/s';
             }
-        }
+        });
     </script>
+
 </body>
 </html>
