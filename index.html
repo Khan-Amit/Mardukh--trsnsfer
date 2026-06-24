@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marduk · ATM</title>
     <style>
-        /* ============================================================
-           RESET & BASE
-           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -35,9 +32,6 @@
             box-shadow: 0 8px 48px rgba(0, 0, 0, 0.8);
         }
 
-        /* ============================================================
-           HEADER
-           ============================================================ */
         .header {
             display: flex;
             justify-content: space-between;
@@ -65,58 +59,18 @@
             font-size: 0.8rem;
         }
 
-        /* ============================================================
-           WALLET — FIXED: FULL ADDRESS VISIBLE
-           ============================================================ */
         .wallet-box {
             background: #010410;
             border-radius: 0.8rem;
             padding: 0.8rem 1rem;
-            font-size: 0.7rem;
-            color: #88ffaa;
+            font-size: 0.65rem;
+            color: #8da0c0;
             word-break: break-all;
             border: 1px solid #1a2a4a;
             margin-bottom: 1.5rem;
             line-height: 1.6;
-            overflow-wrap: break-word;
-            max-width: 100%;
         }
 
-        .wallet-box .wallet-label {
-            color: #8da0c0;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.3rem;
-        }
-
-        .wallet-box .wallet-address {
-            color: #88ffaa;
-            font-weight: bold;
-            font-size: 0.75rem;
-            word-break: break-all;
-        }
-
-        .wallet-box .wallet-copy {
-            color: #ffcc00;
-            cursor: pointer;
-            font-size: 0.6rem;
-            margin-left: 0.5rem;
-            border: 1px solid #ffcc00;
-            padding: 0.1rem 0.5rem;
-            border-radius: 1rem;
-            display: inline-block;
-            transition: 0.2s;
-        }
-
-        .wallet-box .wallet-copy:hover {
-            background: #ffcc00;
-            color: #0a0e1a;
-        }
-
-        /* ============================================================
-           BALANCE GRID
-           ============================================================ */
         .balance-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -183,9 +137,6 @@
             color: #88ff88;
         }
 
-        /* ============================================================
-           POOL SELECTOR
-           ============================================================ */
         .pool-select {
             background: #010410;
             border: 1px solid #1a2a4a;
@@ -203,9 +154,6 @@
             border-color: #ffcc00;
         }
 
-        /* ============================================================
-           BUTTONS
-           ============================================================ */
         .btn-group {
             display: flex;
             flex-wrap: wrap;
@@ -258,9 +206,6 @@
             color: #66ccff;
         }
 
-        /* ============================================================
-           TRANSFER
-           ============================================================ */
         .transfer-section {
             margin-top: 1rem;
             padding-top: 1rem;
@@ -326,9 +271,6 @@
             color: #4a5a6a;
         }
 
-        /* ============================================================
-           RIG ACTIVITY
-           ============================================================ */
         .rig-log {
             background: #010410;
             border-radius: 0.8rem;
@@ -388,9 +330,6 @@
             font-weight: bold;
         }
 
-        /* ============================================================
-           FOOTER
-           ============================================================ */
         .footer {
             text-align: center;
             margin-top: 1.5rem;
@@ -400,9 +339,6 @@
             color: #4a5a6a;
         }
 
-        /* ============================================================
-           SCROLLBAR
-           ============================================================ */
         .rig-log::-webkit-scrollbar {
             width: 4px;
         }
@@ -421,9 +357,7 @@
 
     <div class="container">
 
-        <!-- ============================================================
-             HEADER
-             ============================================================ -->
+        <!-- HEADER -->
         <div class="header">
             <div>
                 <span class="title">🏦 MARDUK · ATM</span>
@@ -432,23 +366,12 @@
             <div class="time" id="headerTime">--:--:--</div>
         </div>
 
-        <!-- ============================================================
-             WALLET — FULL ADDRESS VISIBLE
-             ============================================================ -->
-        <div class="wallet-box">
-            <div class="wallet-label">📬 Wallet Address</div>
-            <div class="wallet-address" id="walletDisplay">
-                45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
-            </div>
-            <div style="margin-top:0.3rem;">
-                <span class="wallet-copy" onclick="copyWallet()">📋 COPY</span>
-                <span style="color:#4a5a6a;font-size:0.55rem;margin-left:0.5rem;">Click to copy full address</span>
-            </div>
+        <!-- WALLET -->
+        <div class="wallet-box" id="walletDisplay">
+            45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
         </div>
 
-        <!-- ============================================================
-             BALANCES — ALL CRYPTOS
-             ============================================================ -->
+        <!-- BALANCES -->
         <div class="balance-grid" id="balanceContainer">
             <div class="balance-item">
                 <div class="label">⛏️ Monero (XMR)</div>
@@ -484,23 +407,20 @@
             </div>
         </div>
 
-        <!-- ============================================================
-             POOL SELECTOR
-             ============================================================ -->
+        <!-- POOL SELECTOR — BTC + XMR -->
         <div style="margin-bottom:1rem;">
             <label style="font-size:0.65rem;color:#4a5a6a;">⛏️ Select Mining Pool</label>
             <select class="pool-select" id="poolSelect">
                 <option value="xmr_uae">Monero (UAE) · xmr-ae.kryptex.network</option>
                 <option value="xmr_eu">Monero (EU) · pool.supportxmr.com</option>
-                <option value="btc_ant">Bitcoin · stratum.antpool.com</option>
-                <option value="ltc">Litecoin · ltc.viabtc.com</option>
-                <option value="doge">Dogecoin · doge.viabtc.com</option>
+                <option value="btc_ant">Bitcoin (China) · stratum.antpool.com</option>
+                <option value="btc_viabtc">Bitcoin (China) · viabtc.com</option>
+                <option value="btc_f2pool">Bitcoin (China) · stratum.f2pool.com</option>
+                <option value="btc_slush">Bitcoin (EU) · stratum.slushpool.com</option>
             </select>
         </div>
 
-        <!-- ============================================================
-             TRANSFER SECTION
-             ============================================================ -->
+        <!-- TRANSFER -->
         <div class="transfer-section">
             <h2 style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">💸 SEND / RECEIVE / PAY</h2>
             <div class="transfer-row">
@@ -519,18 +439,14 @@
             <div class="transfer-status" id="transferStatus">⏳ Ready</div>
         </div>
 
-        <!-- ============================================================
-             BUTTONS
-             ============================================================ -->
+        <!-- BUTTONS -->
         <div class="btn-group">
             <button class="btn primary" onclick="fetchAll()">⟳ REFRESH</button>
             <button class="btn success" onclick="copyWallet()">📋 COPY</button>
             <button class="btn gold" onclick="toggleMining()" id="rigToggleBtn">⛏️ START RIG</button>
         </div>
 
-        <!-- ============================================================
-             RIG ACTIVITY
-             ============================================================ -->
+        <!-- RIG ACTIVITY -->
         <div style="margin-top:1.5rem;background:#010410;border-radius:0.8rem;padding:1rem;border:1px solid #1a2a4a;">
             <div class="rig-status-bar">
                 <span id="rigStatus" style="color:#ff6666;">⏹️ Stopped</span>
@@ -546,9 +462,7 @@
             </div>
         </div>
 
-        <!-- ============================================================
-             FOOTER
-             ============================================================ -->
+        <!-- FOOTER -->
         <div class="footer">
             © 2026 Seliim Ahmed · All Rights Reserved · <span id="footerTime">--:--:--</span>
         </div>
@@ -563,6 +477,16 @@
         // 🔐 CONFIG
         // ============================================================
         const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
+
+        // Pool configurations
+        const POOLS = {
+            xmr_uae: { name: 'Monero (UAE)', symbol: 'XMR', url: 'xmr-ae.kryptex.network:7029', api: 'https://xmr-ae.kryptex.network/api/miner/' },
+            xmr_eu: { name: 'Monero (EU)', symbol: 'XMR', url: 'pool.supportxmr.com:3333', api: 'https://supportxmr.com/api/miner/' },
+            btc_ant: { name: 'Bitcoin (Antpool)', symbol: 'BTC', url: 'stratum.antpool.com:3333', api: 'https://api.antpool.com/api/v1/miner/' },
+            btc_viabtc: { name: 'Bitcoin (ViaBTC)', symbol: 'BTC', url: 'viabtc.com:3333', api: 'https://viabtc.com/api/v1/miner/' },
+            btc_f2pool: { name: 'Bitcoin (F2Pool)', symbol: 'BTC', url: 'stratum.f2pool.com:3333', api: 'https://api.f2pool.com/v1/miner/' },
+            btc_slush: { name: 'Bitcoin (SlushPool)', symbol: 'BTC', url: 'stratum.slushpool.com:3333', api: 'https://slushpool.com/accounts/miner/' }
+        };
 
         let mining = false;
         let shares = 0;
@@ -647,7 +571,7 @@
             addLog('🔄 Fetching data...', 'real');
             await fetchWalletBalance();
 
-            // Placeholder values — replace with real API calls
+            // Placeholder values
             btcBal.textContent = '0.00000000';
             bchBal.textContent = '0.00000000';
             usdtBal.textContent = '0.00';
@@ -675,7 +599,8 @@
             rigStatus.textContent = '⛏️ Mining...';
             rigStatus.style.color = '#88ff88';
             rigToggleBtn.textContent = '⏹ STOP RIG';
-            addLog(`⛏️ Rig started · ${poolSelect.options[poolSelect.selectedIndex].text}`, 'real');
+            const pool = POOLS[poolSelect.value];
+            addLog(`⛏️ Rig started · ${pool.name}`, 'real');
 
             simInterval = setInterval(() => {
                 if (!mining) return;
@@ -782,15 +707,15 @@
         // ============================================================
         addLog('🌀 Marduk ATM v2.0');
         addLog('📬 Wallet loaded');
-        addLog(`🔗 Pool: ${poolSelect.options[poolSelect.selectedIndex].text}`, 'real');
+        const pool = POOLS[poolSelect.value];
+        addLog(`🔗 Pool: ${pool.name}`, 'real');
         fetchAll();
 
-        // Auto-refresh every 60 seconds
         setInterval(fetchAll, 60000);
 
-        // Pool change handler
         poolSelect.addEventListener('change', function() {
-            addLog(`🔄 Switched to ${this.options[this.selectedIndex].text}`, 'real');
+            const pool = POOLS[this.value];
+            addLog(`🔄 Switched to ${pool.name}`, 'real');
             if (!mining) {
                 shares = 0;
                 accumulated = 0;
