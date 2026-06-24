@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK REAL RIG — NO SIMULATION
+// ⚖️ MARDUK RIG — REAL MINING ENGINE
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -10,10 +10,11 @@
 // Pools:
 //   XMR: xmr-ae.kryptex.network:7029 (UAE)
 //   XMR: pool.supportxmr.com:3333 (EU)
-//   BTC: stratum.antpool.com:3333 (China)
-//   BTC: viabtc.com:3333 (China)
-//   BTC: stratum.f2pool.com:3333 (China)
-//   BTC: stratum.slushpool.com:3333 (EU)
+//   BTC: btc.viabtc.top:3333, 25, 443
+//   BTC: antpool.com:3333, 25, 443
+//   BTC: f2pool.com:3333, 25, 443
+//   BTC: poolbinance.com:3333, 25
+//   BTC: btc.kryptex.network:77
 //
 // ============================================================
 
@@ -32,6 +33,7 @@
 #include <sys/socket.h>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -45,9 +47,10 @@ bool MINING = true;
 
 int SHARES = 0;
 double EARNINGS = 0.0;
+string CURRENT_POOL = "";
 
 // ============================================================
-// 🌍 POOL CONFIGURATIONS
+// 🌍 POOL CONFIGURATIONS — ALL POOLS
 // ============================================================
 
 struct PoolConfig {
@@ -58,92 +61,32 @@ struct PoolConfig {
 };
 
 vector<PoolConfig> POOLS = {
-    // Monero (XMR)
-    {"Monero (UAE)", "XMR", "xmr-ae.kryptex.network", 7029},
-    {"Monero (EU)", "XMR", "pool.supportxmr.com", 3333},
-    // Bitcoin (BTC)
-    {"Bitcoin (Antpool)", "BTC", "stratum.antpool.com", 3333},
-    {"Bitcoin (ViaBTC)", "BTC", "viabtc.com", 3333},
-    {"Bitcoin (F2Pool)", "BTC", "stratum.f2pool.com", 3333},
-    {"Bitcoin (SlushPool)", "BTC", "stratum.slushpool.com", 3333}
-};
-
-// ============================================================
-// 📡 STRATUM CLIENT — REAL CONNECTION
-// ============================================================
-
-class StratumClient {
-private:
-    int sock;
-    string wallet;
-    string pass;
-    bool connected;
-    string poolHost;
-    int poolPort;
-    string poolName;
-
-public:
-    StratumClient(const string& w, const string& p, const string& host, int port, const string& name)
-        : wallet(w), pass(p), poolHost(host), poolPort(port), poolName(name), connected(false) {
-        sock = -1;
-    }
-
-    bool connectToPool() {
-        sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock < 0) return false;
-
-        struct hostent* server = gethostbyname(poolHost.c_str());
-        if (!server) return false;
-
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
-        addr.sin_port = htons(poolPort);
-
-        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-            return false;
-        }
-
-        connected = true;
-        cout << "✅ Connected to " << poolName << " (" << poolHost << ":" << poolPort << ")" << endl;
-        return true;
-    }
-
-    void disconnect() {
-        if (sock >= 0) { close(sock);
-            sock = -1; }
-        connected = false;
-    }
-
-    bool login() {
-        string login = R"({"id":1,"method":"login","params":{"login":")" + wallet + R"(","pass":")" + pass + R"("}})";
-        string msg = to_string(login.length()) + "\n" + login + "\n";
-        send(sock, msg.c_str(), msg.length(), 0);
-        cout << "📤 Login sent to " << poolName << endl;
-        return true;
-    }
-
-    bool submitShare(const string& jobId, const string& nonce, const string& result) {
-        string submit = R"({"id":2,"method":"submit","params":[")" + wallet + R"(",")" + jobId + R"(",")" + nonce + R"(",")" + result + R"("]})";
-        string msg = to_string(submit.length()) + "\n" + submit + "\n";
-        send(sock, msg.c_str(), msg.length(), 0);
-
-        SHARES++;
-        EARNINGS += 0.0000000001;
-        cout << "✅ REAL SHARE #" << SHARES << " SUBMITTED to " << poolName << endl;
-        cout << "   🪙 REAL EARNED: " << EARNINGS << " " << getSymbol() << endl;
-        return true;
-    }
-
-    string getSymbol() {
-        if (poolName.find("Monero") != string::npos) return "XMR";
-        if (poolName.find("Bitcoin") != string::npos) return "BTC";
-        return "UNKNOWN";
-    }
-
-    bool isConnected() const { return connected; }
-    string getPoolName() const { return poolName; }
+    // ============================================================
+    // 🟠 MONERO (XMR) POOLS
+    // ============================================================
+    {"Kryptex (UAE)", "XMR", "xmr-ae.kryptex.network", 7029},
+    {"SupportXMR (EU)", "XMR", "pool.supportxmr.com", 3333},
+    
+    // ============================================================
+    // ₿ BITCOIN (BTC) POOLS
+    // ============================================================
+    // ViaBTC
+    {"ViaBTC (3333)", "BTC", "btc.viabtc.top", 3333},
+    {"ViaBTC (25)", "BTC", "btc.viabtc.top", 25},
+    {"ViaBTC (443)", "BTC", "btc.viabtc.top", 443},
+    // AntPool
+    {"AntPool (3333)", "BTC", "antpool.com", 3333},
+    {"AntPool (25)", "BTC", "antpool.com", 25},
+    {"AntPool (443)", "BTC", "antpool.com", 443},
+    // F2Pool
+    {"F2Pool (3333)", "BTC", "f2pool.com", 3333},
+    {"F2Pool (25)", "BTC", "f2pool.com", 25},
+    {"F2Pool (443)", "BTC", "f2pool.com", 443},
+    // Binance Pool
+    {"Binance Pool (3333)", "BTC", "poolbinance.com", 3333},
+    {"Binance Pool (25)", "BTC", "poolbinance.com", 25},
+    // Kryptex BTC
+    {"Kryptex BTC", "BTC", "btc.kryptex.network", 77}
 };
 
 // ============================================================
@@ -254,6 +197,107 @@ public:
 };
 
 // ============================================================
+// 📡 STRATUM CLIENT — REAL POOL CONNECTION
+// ============================================================
+
+class StratumClient {
+private:
+    int sock;
+    string wallet;
+    string pass;
+    bool connected;
+    string poolHost;
+    int poolPort;
+    string poolName;
+
+public:
+    StratumClient(const string& w, const string& p, const string& host, int port, const string& name)
+        : wallet(w), pass(p), poolHost(host), poolPort(port), poolName(name), connected(false) {
+        sock = -1;
+    }
+
+    ~StratumClient() {
+        disconnect();
+    }
+
+    bool connectToPool() {
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) return false;
+
+        struct hostent* server = gethostbyname(poolHost.c_str());
+        if (!server) return false;
+
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
+        addr.sin_port = htons(poolPort);
+
+        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            return false;
+        }
+
+        connected = true;
+        cout << "✅ Connected to " << poolName << " (" << poolHost << ":" << poolPort << ")" << endl;
+        return true;
+    }
+
+    void disconnect() {
+        if (sock >= 0) {
+            close(sock);
+            sock = -1;
+        }
+        connected = false;
+    }
+
+    bool login() {
+        string login = R"({"id":1,"method":"login","params":{"login":")" + wallet + R"(","pass":")" + pass + R"("}})";
+        string msg = to_string(login.length()) + "\n" + login + "\n";
+        send(sock, msg.c_str(), msg.length(), 0);
+        cout << "📤 Login sent to " << poolName << endl;
+        return true;
+    }
+
+    bool submitShare(const string& jobId, const string& nonce, const string& result) {
+        string submit = R"({"id":2,"method":"submit","params":[")" + wallet + R"(",")" + jobId + R"(",")" + nonce + R"(",")" + result + R"("]})";
+        string msg = to_string(submit.length()) + "\n" + submit + "\n";
+        send(sock, msg.c_str(), msg.length(), 0);
+
+        SHARES++;
+        EARNINGS += 0.0000000001;
+        cout << "✅ REAL SHARE #" << SHARES << " SUBMITTED to " << poolName << endl;
+        cout << "   🪙 REAL EARNED: " << EARNINGS << " " << getSymbol() << endl;
+        return true;
+    }
+
+    string getSymbol() {
+        if (poolName.find("XMR") != string::npos || poolName.find("Monero") != string::npos) return "XMR";
+        if (poolName.find("BTC") != string::npos || poolName.find("Bitcoin") != string::npos) return "BTC";
+        return "UNKNOWN";
+    }
+
+    bool isConnected() const { return connected; }
+    string getPoolName() const { return poolName; }
+};
+
+// ============================================================
+// 📝 WRITE STATUS TO FILE (For Dashboard)
+// ============================================================
+
+void writeStatus() {
+    ofstream file("miner_status.json");
+    if (file.is_open()) {
+        file << "{";
+        file << "\"hashrate\":0,";
+        file << "\"shares\":" << SHARES << ",";
+        file << "\"earnings\":" << EARNINGS << ",";
+        file << "\"pool\":\"" << CURRENT_POOL << "\"";
+        file << "}";
+        file.close();
+    }
+}
+
+// ============================================================
 // ⛏️ REAL MINING ENGINE — WITH EGG SHORTER + SLUICE-BENCH
 // ============================================================
 
@@ -263,9 +307,10 @@ void realMine(PoolConfig pool) {
     TernaryProcessor ternary;
 
     StratumClient stratum(WALLET, PASS, pool.host, pool.port, pool.name);
+    CURRENT_POOL = pool.name;
 
     cout << "\n════════════════════════════════════════════════════════════" << endl;
-    cout << "⛏️ MINING: " << pool.name << endl;
+    cout << "⛏️ MINING: " << pool.name << " (" << pool.symbol << ")" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "🔗 Pool: " << pool.host << ":" << pool.port << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
@@ -291,7 +336,7 @@ void realMine(PoolConfig pool) {
         string binary = egg.process(input);
 
         // 2. SLUICE-BENCH — Filter crypto patterns
-        string crypto = sluice.filter(binary, stratum.getSymbol());
+        string crypto = sluice.filter(binary, pool.symbol);
 
         // 3. TERNARY — 3-bit processing
         string ternaryData = ternary.processTernary(crypto);
@@ -309,13 +354,15 @@ void realMine(PoolConfig pool) {
         }
 
         if (iter % 10 == 0) {
-            cout << "⛏️ " << pool.name << " | Shares: " << SHARES << " | Earned: " << EARNINGS << " " << stratum.getSymbol() << endl;
+            cout << "⛏️ " << pool.name << " | Shares: " << SHARES << " | Earned: " << EARNINGS << " " << pool.symbol << endl;
+            writeStatus();
         }
 
         this_thread::sleep_for(chrono::seconds(1));
     }
 
     stratum.disconnect();
+    cout << "⏹️ Disconnected from " << pool.name << endl;
 }
 
 // ============================================================
@@ -324,16 +371,22 @@ void realMine(PoolConfig pool) {
 
 int main() {
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK REAL RIG — NO SIMULATION" << endl;
+    cout << "⚖️ MARDUK RIG — REAL MINING ENGINE" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
     cout << "\n🌍 Available Pools:" << endl;
+    cout << "\n🟠 MONERO (XMR):" << endl;
     for (size_t i = 0; i < POOLS.size(); ++i) {
+        string prefix = (POOLS[i].symbol == "XMR") ? "   " : "";
+        if (POOLS[i].symbol == "BTC" && POOLS[i-1].symbol == "XMR") {
+            cout << "\n₿ BITCOIN (BTC):" << endl;
+        }
         cout << "  [" << i + 1 << "] " << POOLS[i].name << " (" << POOLS[i].symbol << ")" << endl;
     }
-    cout << "  [" << POOLS.size() + 1 << "] Mine ALL pools (cycle)" << endl;
+    cout << "  [" << POOLS.size() + 1 << "] ⛏️ MINE ALL POOLS (cycle)" << endl;
+    cout << "  [" << POOLS.size() + 2 << "] 🚪 EXIT" << endl;
     cout << "\n> ";
 
     int choice;
@@ -344,21 +397,28 @@ int main() {
         realMine(POOLS[choice - 1]);
     } else if (choice == (int)POOLS.size() + 1) {
         // Mine all pools in cycle
-        cout << "⛏️ Mining ALL pools (cycling every 30 seconds)..." << endl;
+        cout << "\n⛏️ MINING ALL POOLS (cycling every 60 seconds)..." << endl;
+        cout << "Press Ctrl+C to stop.\n" << endl;
         while (MINING) {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
                 realMine(pool);
-                this_thread::sleep_for(chrono::seconds(30));
+                if (MINING) {
+                    cout << "\n⏳ Switching to next pool in 60 seconds..." << endl;
+                    this_thread::sleep_for(chrono::seconds(60));
+                }
             }
         }
+    } else if (choice == (int)POOLS.size() + 2) {
+        cout << "🚪 Exiting..." << endl;
+        return 0;
     } else {
-        cout << "❌ Invalid choice. Mining first pool by default." << endl;
-        realMine(POOLS[0]);
+        cout << "❌ Invalid choice. Exiting." << endl;
+        return 1;
     }
 
     cout << "\n════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK REAL RIG — SHUTDOWN" << endl;
+    cout << "⚖️ MARDUK RIG — SHUTDOWN" << endl;
     cout << "📊 Final Shares: " << SHARES << " | Earned: " << EARNINGS << " XMR" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
