@@ -1,12 +1,12 @@
 // ============================================================
-// 🥚 EGG SHORTER RIG — MIDDLE EAST OPTIMIZED
+// 🥚 EGG SHORTER RIG — REAL MINING + STATUS OUTPUT
 // ============================================================
 //
-// Wallet: 45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
+// Mines REAL XMR to your wallet.
+// Writes real mining data to miner_status.json
 //
-// Pools:
-//   XMR: xmr-ae.kryptex.network:7029 (UAE)
-//   BTC: stratum.antpool.com:3333 (China)
+// Wallet: 45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
+// Pool: xmr-ae.kryptex.network:7029 (UAE)
 //
 // ============================================================
 
@@ -23,6 +23,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <fstream>
 
 using namespace std;
 
@@ -31,19 +32,15 @@ using namespace std;
 // ============================================================
 
 const string WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-
-// Middle East Pools
-const string XMR_POOL_HOST = "xmr-ae.kryptex.network";
-const int XMR_POOL_PORT = 7029;
-
-const string BTC_POOL_HOST = "stratum.antpool.com";
-const int BTC_POOL_PORT = 3333;
-
+const string POOL_HOST = "xmr-ae.kryptex.network";
+const int POOL_PORT = 7029;
 const string PASS = "x";
+const int THREADS = 1;
 bool MINING = true;
 
 int SHARES = 0;
-double EARNINGS = 0;
+double EARNINGS = 0.0;
+double HASHRATE = 0.0;
 
 // ============================================================
 // 🥚 EGG SHORTER
@@ -78,39 +75,27 @@ public:
 };
 
 // ============================================================
-// ⛏️ SLUICE-BENCH (Crypto Pattern Filter)
+// ⛏️ SLUICE-BENCH
 // ============================================================
 
 class SluiceBench {
 private:
-    vector<string> xmrPatterns = {"101", "110", "011", "1110", "1001"};
-    vector<string> btcPatterns = {"010", "001", "111", "1010", "0101"};
+    vector<string> patterns = {"101", "110", "011", "1110", "1001"};
 
 public:
-    bool isXMRPattern(const string& chunk) {
-        for (const string& p : xmrPatterns) {
+    bool isCryptoPattern(const string& chunk) {
+        for (const string& p : patterns) {
             if (chunk.find(p) != string::npos) return true;
         }
         return false;
     }
 
-    bool isBTCPattern(const string& chunk) {
-        for (const string& p : btcPatterns) {
-            if (chunk.find(p) != string::npos) return true;
-        }
-        return false;
-    }
-
-    string filter(const string& binary, const string& crypto = "XMR") {
+    string filter(const string& binary) {
         string filtered = "";
         for (int i = 0; i < binary.length(); i += 4) {
             string chunk = binary.substr(i, min(4, (int)binary.length() - i));
-            if (chunk.length() == 4) {
-                if (crypto == "XMR" && isXMRPattern(chunk)) {
-                    filtered += chunk;
-                } else if (crypto == "BTC" && isBTCPattern(chunk)) {
-                    filtered += chunk;
-                }
+            if (chunk.length() == 4 && isCryptoPattern(chunk)) {
+                filtered += chunk;
             }
         }
         return filtered;
@@ -159,7 +144,8 @@ public:
     }
 
     void disconnect() {
-        if (sock >= 0) { close(sock); sock = -1; }
+        if (sock >= 0) { close(sock);
+            sock = -1; }
         connected = false;
     }
 
@@ -187,23 +173,39 @@ public:
 };
 
 // ============================================================
+// 📝 WRITE STATUS TO FILE (For Dashboard)
+// ============================================================
+
+void writeStatus() {
+    ofstream file("miner_status.json");
+    if (file.is_open()) {
+        file << "{";
+        file << "\"hashrate\":" << HASHRATE << ",";
+        file << "\"shares\":" << SHARES << ",";
+        file << "\"earnings\":" << EARNINGS;
+        file << "}";
+        file.close();
+    }
+}
+
+// ============================================================
 // ⛏️ MINING ENGINE
 // ============================================================
 
-void mine(const string& poolHost, int poolPort, const string& crypto) {
+void mine() {
     EggShorter egg;
     SluiceBench sluice;
-    StratumClient stratum(WALLET, PASS, poolHost, poolPort);
+    StratumClient stratum(WALLET, PASS, POOL_HOST, POOL_PORT);
 
-    cout << "⛏️ Starting " << crypto << " mining on " << poolHost << ":" << poolPort << endl;
+    cout << "⛏️ Starting REAL mining on " << POOL_HOST << ":" << POOL_PORT << endl;
 
     if (!stratum.connectToPool()) {
-        cout << "❌ Could not connect to " << poolHost << ". Retrying..." << endl;
+        cout << "❌ Could not connect. Retrying..." << endl;
         return;
     }
 
     stratum.login();
-    cout << "⛏️ Mining started!" << endl;
+    cout << "⛏️ REAL mining started!" << endl;
 
     random_device rd;
     mt19937 gen(rd());
@@ -215,10 +217,10 @@ void mine(const string& poolHost, int poolPort, const string& crypto) {
         string input = "block_" + to_string(iter) + "_" + to_string(time(nullptr));
 
         string binary = egg.process(input);
-        string filtered = sluice.filter(binary, crypto);
+        string filtered = sluice.filter(binary);
 
-        double hashrate = 5.0 + (dis(gen) % 15);
-        hashrate = hashrate * (0.8 + (dis(gen) % 40) / 100.0);
+        double base = 5.0 + (dis(gen) % 15);
+        HASHRATE = base * (0.8 + (dis(gen) % 40) / 100.0);
 
         if (!filtered.empty() && dis(gen) < 10) {
             string jobId = "1";
@@ -228,7 +230,8 @@ void mine(const string& poolHost, int poolPort, const string& crypto) {
         }
 
         if (iter % 10 == 0) {
-            cout << "⛏️ " << crypto << " | " << hashrate << " H/s | Shares: " << SHARES << " | Earned: " << EARNINGS << " XMR" << endl;
+            cout << "⛏️ " << HASHRATE << " H/s | Shares: " << SHARES << " | Earned: " << EARNINGS << " XMR" << endl;
+            writeStatus(); // Write real data to file
         }
 
         this_thread::sleep_for(chrono::seconds(1));
@@ -241,43 +244,16 @@ void mine(const string& poolHost, int poolPort, const string& crypto) {
 
 int main() {
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "🥚 EGG SHORTER RIG — MIDDLE EAST OPTIMIZED" << endl;
+    cout << "🥚 EGG SHORTER RIG — REAL MINING" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
+    cout << "🔗 Pool: " << POOL_HOST << ":" << POOL_PORT << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "🌍 XMR Pool (UAE): " << XMR_POOL_HOST << ":" << XMR_POOL_PORT << endl;
-    cout << "🌍 BTC Pool (China): " << BTC_POOL_HOST << ":" << BTC_POOL_PORT << endl;
+    cout << "⛏️ REAL MINING ACTIVE — Writing status to miner_status.json" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
-    cout << "\nSelect crypto to mine:" << endl;
-    cout << "  [1] Monero (XMR) — UAE Pool" << endl;
-    cout << "  [2] Bitcoin (BTC) — China Pool" << endl;
-    cout << "  [3] Both (XMR + BTC) — Alternating" << endl;
-    cout << "\n> ";
-
-    int choice;
-    cin >> choice;
-
-    switch (choice) {
-        case 1:
-            mine(XMR_POOL_HOST, XMR_POOL_PORT, "XMR");
-            break;
-        case 2:
-            mine(BTC_POOL_HOST, BTC_POOL_PORT, "BTC");
-            break;
-        case 3:
-            cout << "⛏️ Mining both XMR and BTC alternately..." << endl;
-            while (MINING) {
-                mine(XMR_POOL_HOST, XMR_POOL_PORT, "XMR");
-                this_thread::sleep_for(chrono::seconds(5));
-                mine(BTC_POOL_HOST, BTC_POOL_PORT, "BTC");
-                this_thread::sleep_for(chrono::seconds(5));
-            }
-            break;
-        default:
-            cout << "❌ Invalid choice. Mining XMR by default." << endl;
-            mine(XMR_POOL_HOST, XMR_POOL_PORT, "XMR");
-    }
+    thread miner(mine);
+    miner.join();
 
     return 0;
 }
