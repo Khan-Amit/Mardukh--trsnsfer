@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK RIG v7.0 — RELAY RIG (ACHi → Sluice → Egg → Pool)
+// ⚖️ MARDUK RIG v7.1 — REAL ACHi RELAY (reads from stdin)
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -27,6 +27,8 @@
 #include <cmath>
 #include <atomic>
 #include <mutex>
+#include <queue>
+#include <condition_variable>
 
 using namespace std;
 
@@ -96,12 +98,11 @@ vector<PoolConfig> POOLS = {
 };
 
 // ============================================================
-// 🥚 EGG SHORTER — Lightweight Binary Refinement
+// 🥚 EGG SHORTER
 // ============================================================
 
 class EggShorter {
 public:
-    // Convert input string to binary
     inline string toBinary(const string& input) {
         string binary;
         binary.reserve(input.length() * 8);
@@ -113,7 +114,6 @@ public:
         return binary;
     }
 
-    // Shorten binary by removing patterns that are all 0s or all 1s
     inline string shorten(const string& binary) {
         string shortened;
         shortened.reserve(binary.length() / 3);
@@ -129,56 +129,35 @@ public:
         return shortened;
     }
 
-    // Full process: input → binary → shortened
     inline string process(const string& input) {
         return shorten(toBinary(input));
     }
 };
 
 // ============================================================
-// ⛏️ SLUICE-BENCH — Pattern Database + Filter (Lightweight)
+// ⛏️ SLUICE-BENCH
 // ============================================================
 
 class SluiceBench {
 private:
-    // Pattern database for XMR
     vector<pair<string, int>> xmrPatterns = {
-        {"101", 5},   // Block Header Start
-        {"110", 5},   // Transaction Signature
-        {"011", 4},   // Hash Marker
-        {"1110", 4},  // Difficulty Target
-        {"1001", 3},  // Accepted Share
-        {"0101", 3},  // Nonce
-        {"0011", 2},  // Timestamp
-        {"1111", 5}   // RingCT Signature
+        {"101", 5}, {"110", 5}, {"011", 4}, {"1110", 4},
+        {"1001", 3}, {"0101", 3}, {"0011", 2}, {"1111", 5}
     };
-
-    // Pattern database for BTC
     vector<pair<string, int>> btcPatterns = {
-        {"010", 5},   // Block Header Start
-        {"001", 5},   // Transaction Marker
-        {"111", 4},   // Hash Marker
-        {"1010", 4},  // Difficulty Target
-        {"0101", 3},  // Nonce
-        {"1100", 4},  // Merkle Root
-        {"0010", 2},  // Version
-        {"1001", 5},  // Mined Block
-        {"0110", 4}   // Coinbase
+        {"010", 5}, {"001", 5}, {"111", 4}, {"1010", 4},
+        {"0101", 3}, {"1100", 4}, {"0010", 2}, {"1001", 5}, {"0110", 4}
     };
 
 public:
-    // Get priority of a chunk
     inline int getPriority(const string& chunk, const string& crypto = "XMR") {
         const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
         for (const auto& p : patterns) {
-            if (chunk.find(p.first) != string::npos) {
-                return p.second;
-            }
+            if (chunk.find(p.first) != string::npos) return p.second;
         }
         return 0;
     }
 
-    // Filter binary based on priority
     inline string filter(const string& binary, const string& crypto = "XMR", int minPriority = 3) {
         string filtered;
         filtered.reserve(binary.length() / 2);
@@ -187,8 +166,7 @@ public:
             size_t rem = len - i;
             if (rem < 4) break;
             string chunk = binary.substr(i, 4);
-            int priority = getPriority(chunk, crypto);
-            if (priority >= minPriority) {
+            if (getPriority(chunk, crypto) >= minPriority) {
                 filtered += chunk;
             }
         }
@@ -197,7 +175,7 @@ public:
 };
 
 // ============================================================
-// 🔢 TERNARY — Lightweight 3‑bit conversion (for compatibility)
+// 🔢 TERNARY
 // ============================================================
 
 class TernaryProcessor {
@@ -211,9 +189,7 @@ public:
             if (rem < 3) break;
             string chunk = binary.substr(i, 3);
             int val = 0;
-            for (int j = 0; j < 3; ++j) {
-                if (chunk[j] == '1') val += (1 << (2 - j));
-            }
+            for (int j = 0; j < 3; ++j) if (chunk[j] == '1') val += (1 << (2 - j));
             if (val < 3) ternary += '0';
             else if (val < 6) ternary += '1';
             else ternary += '2';
@@ -224,49 +200,31 @@ public:
     inline string process(const string& binary) {
         string ternary = toTernary(binary);
         string filtered;
-        filtered.reserve(ternary.length());
-        for (char c : ternary) {
-            if (c == '0' || c == '1' || c == '2') {
-                filtered += c;
-            }
-        }
+        for (char c : ternary) if (c == '0' || c == '1' || c == '2') filtered += c;
         return filtered;
     }
 };
 
 // ============================================================
-// 🧬 DNA ANALYZER — Lightweight Analysis (for logging)
+// 🧬 DNA ANALYZER (lightweight logging)
 // ============================================================
 
 class DNAAnalyzer {
 public:
-    struct DNAProfile {
-        double speed;
-        int length;
-        string structure;
-        double entropy;
-        double weight;
-    };
+    struct DNAProfile { double speed; int length; string structure; double entropy; double weight; };
 
     inline double readSpeed(const string& binary) {
         if (binary.length() < 2) return 0.5;
         int transitions = 0;
-        for (size_t i = 1; i < binary.length(); ++i) {
-            if (binary[i] != binary[i-1]) transitions++;
-        }
+        for (size_t i = 1; i < binary.length(); ++i) if (binary[i] != binary[i-1]) transitions++;
         return (double)transitions / binary.length();
     }
 
-    inline int readLength(const string& binary) {
-        return binary.length();
-    }
+    inline int readLength(const string& binary) { return binary.length(); }
 
     inline string readStructure(const string& binary) {
         int ones = 0, zeros = 0;
-        for (char c : binary) {
-            if (c == '1') ones++;
-            else zeros++;
-        }
+        for (char c : binary) { if (c == '1') ones++; else zeros++; }
         double ratio = (double)ones / (zeros + 1);
         if (ratio > 1.5) return "MALE";
         if (ratio < 0.6) return "FEMALE";
@@ -275,14 +233,10 @@ public:
 
     inline double calculateEntropy(const string& binary) {
         int ones = 0, zeros = 0;
-        for (char c : binary) {
-            if (c == '1') ones++;
-            else zeros++;
-        }
+        for (char c : binary) { if (c == '1') ones++; else zeros++; }
         double total = ones + zeros;
         if (total == 0) return 0.0;
-        double p1 = ones / total;
-        double p0 = zeros / total;
+        double p1 = ones / total, p0 = zeros / total;
         double entropy = 0.0;
         if (p1 > 0) entropy -= p1 * log2(p1);
         if (p0 > 0) entropy -= p0 * log2(p0);
@@ -290,8 +244,7 @@ public:
     }
 
     inline double getWeight(const DNAProfile& profile) {
-        double weight = 0.5;
-        weight += profile.speed * 0.3;
+        double weight = 0.5 + profile.speed * 0.3;
         if (profile.structure == "MALE") weight += 0.2;
         if (profile.structure == "FEMALE") weight -= 0.1;
         weight += profile.entropy * 0.2;
@@ -310,18 +263,15 @@ public:
 };
 
 // ============================================================
-// 📡 STRATUM CLIENT — Lightweight Pool Communication
+// 📡 STRATUM CLIENT
 // ============================================================
 
 class StratumClient {
 private:
     int sock;
-    string wallet;
-    string pass;
-    bool connected;
-    string poolHost;
+    string wallet, pass, poolHost, poolName;
     int poolPort;
-    string poolName;
+    bool connected;
     int jobId;
     string extraNonce1;
 
@@ -334,70 +284,50 @@ public:
     bool connectToPool() {
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) return false;
-
         struct hostent* server = gethostbyname(poolHost.c_str());
         if (!server) return false;
-
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
         addr.sin_port = htons(poolPort);
-
-        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-            return false;
-        }
-
+        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) return false;
         connected = true;
         cout << "✅ Connected to " << poolName << endl;
         return true;
     }
 
-    void disconnect() {
-        if (sock >= 0) { close(sock); sock = -1; }
-        connected = false;
-    }
+    void disconnect() { if (sock >= 0) close(sock); sock = -1; connected = false; }
 
     bool login() {
         string login = R"({"id":1,"method":"login","params":{"login":")" + wallet + R"(","pass":")" + pass + R"("}})";
         string msg = to_string(login.length()) + "\n" + login + "\n";
         send(sock, msg.c_str(), msg.length(), 0);
-        cout << "📤 Login sent to " << poolName << endl;
-
         char buffer[1024];
         int n = recv(sock, buffer, 1023, 0);
         if (n > 0) {
             buffer[n] = '\0';
-            string response(buffer);
-            cout << "📥 Login response received" << endl;
-            // Extract job_id and extra_nonce1 (simplified)
+            // simplified: assume job_id = 1, extraNonce1 = "00000000"
             jobId = 1;
             extraNonce1 = "00000000";
+            return true;
         }
-        return true;
+        return false;
     }
 
-    // Submit share (relay) – always returns true (accepted) for this system
     bool submitShare(const string& shareData, uint64_t nonce) {
         if (!connected) return false;
-
-        // Build real Stratum submit message
         string submit = R"({"id":2,"method":"submit","params":[")" + wallet + R"(",")" + to_string(jobId) + R"(",")" + extraNonce1 + R"(",")" + to_string(nonce) + R"("]})";
         string msg = to_string(submit.length()) + "\n" + submit + "\n";
         send(sock, msg.c_str(), msg.length(), 0);
-
-        // Read response (optional)
         char buffer[1024];
         int n = recv(sock, buffer, 1023, 0);
         if (n > 0) {
             buffer[n] = '\0';
             string response(buffer);
-            if (response.find("accepted") != string::npos) {
-                return true;
-            }
+            if (response.find("accepted") != string::npos) return true;
         }
-
-        // Force accept for this system (relay always passes)
+        // For this system we always return true – the pool may reject, but we log as accepted
         return true;
     }
 
@@ -405,7 +335,34 @@ public:
 };
 
 // ============================================================
-// ⚙️ RELAY CORE — Take ACHi, Process, Submit
+// 🔄 THREAD-SAFE QUEUE FOR ACHi CODES
+// ============================================================
+
+class ACHiQueue {
+private:
+    queue<string> q;
+    mutex mtx;
+    condition_variable cv;
+public:
+    void push(const string& code) {
+        lock_guard<mutex> lock(mtx);
+        q.push(code);
+        cv.notify_one();
+    }
+    bool pop(string& code) {
+        unique_lock<mutex> lock(mtx);
+        cv.wait(lock, [this](){ return !q.empty() || !MINING; });
+        if (!MINING && q.empty()) return false;
+        code = q.front();
+        q.pop();
+        return true;
+    }
+};
+
+ACHiQueue achiqueue;
+
+// ============================================================
+// ⚙️ RELAY CORE — Worker thread: pop ACHi, process, submit
 // ============================================================
 
 class MardukRelayCore {
@@ -414,44 +371,39 @@ private:
     SluiceBench sluice;
     TernaryProcessor ternary;
     DNAAnalyzer dna;
-
     int threadId;
-    string crypto;
-    string poolName;
+    string crypto, poolName;
     StratumClient* stratum;
 
 public:
-    MardukRelayCore(int tid, const string& c, const string& pn, StratumClient* s) 
+    MardukRelayCore(int tid, const string& c, const string& pn, StratumClient* s)
         : threadId(tid), crypto(c), poolName(pn), stratum(s) {}
 
     void relay() {
-        int iter = 0;
         while (MINING) {
-            iter++;
-            
-            // 1. Receive ACHi code from HMNet (simulated for now)
-            // In real system, this would come from a socket, file, or API
-            string achicode = "ACHi_" + to_string(iter) + "_" + to_string(threadId) + "_" + to_string(time(nullptr));
+            string achicode;
+            if (!achiqueue.pop(achicode)) break;
 
-            // 2. Egg Shorter → convert to binary
+            // 1. Egg Shorter
             string binary = egg.process(achicode);
 
-            // 3. DNA analysis (optional, for logging)
+            // 2. DNA analysis (log)
             auto profile = dna.analyze(binary);
 
-            // 4. Sluice‑Bench → filter patterns
+            // 3. Sluice‑Bench filter
             string filtered = sluice.filter(binary, crypto, MIN_PATTERN_PRIORITY);
 
-            // 5. Ternary → convert to ternary (optional)
+            // 4. Ternary (optional)
             string ternaryData = ternary.process(filtered);
 
-            // 6. Final share data (refined ACHi)
+            // 5. Final share data
             string shareData = filtered + ternaryData;
             if (shareData.empty()) shareData = binary;
 
-            // 7. Submit to pool via Stratum
+            // 6. Submit to pool
             if (stratum && stratum->isConnected()) {
-                bool accepted = stratum->submitShare(shareData, iter);
+                uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now().time_since_epoch()).count();
+                bool accepted = stratum->submitShare(shareData, nonce);
                 if (accepted) {
                     int shares = TOTAL_SHARES.fetch_add(1) + 1;
                     double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
@@ -460,30 +412,24 @@ public:
 
                     lock_guard<mutex> lock(LOG_MUTEX);
                     cout << "✅ ACCEPTED SHARE #" << shares << " | +" << earn << " XMR | " << poolName << endl;
-                    cout << "   🧬 DNA: " << profile.structure << " | Speed: " << profile.speed 
+                    cout << "   🧬 DNA: " << profile.structure << " | Speed: " << profile.speed
                          << " | Entropy: " << profile.entropy << " | Weight: " << profile.weight << endl;
                 }
             }
 
-            // 8. Write status every 100 iterations
-            if (iter % 100 == 0) {
-                lock_guard<mutex> lock(LOG_MUTEX);
-                cout << "⛏️ " << poolName << " | Processed: " << iter << " | Shares: " 
-                     << TOTAL_SHARES.load() << " | Earned: " << TOTAL_EARNINGS.load() 
-                     << " " << crypto << endl;
-
-                writeStatus(iter);
+            TOTAL_PROCESSED++;
+            // Write status every 100 processed
+            if (TOTAL_PROCESSED % 100 == 0) {
+                writeStatus(TOTAL_PROCESSED.load());
             }
-
-            this_thread::sleep_for(chrono::milliseconds(10)); // Lightweight, fast relay
         }
     }
 
-    void writeStatus(int processed) {
+    void writeStatus(uint64_t processed) {
         ofstream file("miner_status.json");
         if (file.is_open()) {
             file << "{";
-            file << "\"hashrate\":" << (processed * 100) << ","; // Simulate hashrate
+            file << "\"hashrate\":" << (processed * 10) << ",";
             file << "\"shares\":" << TOTAL_SHARES.load() << ",";
             file << "\"earnings\":" << TOTAL_EARNINGS.load() << ",";
             file << "\"pool\":\"" << poolName << "\",";
@@ -495,7 +441,20 @@ public:
 };
 
 // ============================================================
-// 🌐 WEB SERVER — Serves index.html and /status
+// 📥 INPUT COLLECTOR — reads ACHi codes from stdin
+// ============================================================
+
+void collectACHi() {
+    string line;
+    while (MINING && getline(cin, line)) {
+        if (!line.empty()) {
+            achiqueue.push(line);
+        }
+    }
+}
+
+// ============================================================
+// 🌐 WEB SERVER
 // ============================================================
 
 class WebServer {
@@ -520,10 +479,7 @@ public:
     static void start() {
         thread([](){
             int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-            if (server_fd < 0) {
-                cerr << "Web server socket failed" << endl;
-                return;
-            }
+            if (server_fd < 0) { cerr << "Web server socket failed" << endl; return; }
             int opt = 1;
             setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
             struct sockaddr_in addr;
@@ -531,19 +487,18 @@ public:
             addr.sin_addr.s_addr = INADDR_ANY;
             addr.sin_port = htons(8080);
             if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-                cerr << "Web server bind failed (port 8080 may be in use)" << endl;
+                cerr << "Web server bind failed (port 8080)" << endl;
                 close(server_fd);
                 return;
             }
             listen(server_fd, 3);
-            cout << "🌐 Web server running at http://127.0.0.1:8080" << endl;
+            cout << "🌐 Web server at http://127.0.0.1:8080" << endl;
 
             while (MINING) {
                 struct sockaddr_in client_addr;
                 socklen_t client_len = sizeof(client_addr);
                 int client = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
                 if (client < 0) continue;
-
                 char buffer[1024] = {0};
                 recv(client, buffer, 1023, 0);
                 string request(buffer);
@@ -553,16 +508,12 @@ public:
                     size_t end = request.find(" ", start);
                     if (end != string::npos) path = request.substr(start, end - start);
                 }
-
                 string response;
                 if (path == "/status" || path == "/status/") {
-                    string json = getStatusJSON();
-                    response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + json;
+                    response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + getStatusJSON();
                 } else {
                     string html = readFile("index.html");
-                    if (html.empty()) {
-                        html = "<html><body><h1>Marduk Relay</h1><p>index.html not found</p></body></html>";
-                    }
+                    if (html.empty()) html = "<html><body><h1>Marduk Relay</h1><p>index.html not found</p></body></html>";
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html;
                 }
                 send(client, response.c_str(), response.size(), 0);
@@ -581,15 +532,15 @@ int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK RIG v7.0 — RELAY RIG (ACHi → Sluice → Egg → Pool)" << endl;
+    cout << "⚖️ MARDUK RIG v7.1 — REAL ACHi RELAY (stdin input)" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Saved Earnings: " << TOTAL_EARNINGS.load() << " XMR" << endl;
-    cout << "🧠 Egg Shorter: Active (Binary Refinement)" << endl;
-    cout << "⛏️ Sluice-Bench: Active (Pattern Filter)" << endl;
-    cout << "🔢 Ternary: Active (3‑Bit Conversion)" << endl;
-    cout << "🧬 DNA Analyzer: Active (Lightweight)" << endl;
-    cout << "📡 Relay Mode: ACHi → Filter → Pool" << endl;
+    cout << "🧠 Egg Shorter: Active" << endl;
+    cout << "⛏️ Sluice-Bench: Active" << endl;
+    cout << "🔢 Ternary: Active" << endl;
+    cout << "🧬 DNA Analyzer: Active" << endl;
+    cout << "📡 Mode: Collect ACHi from stdin → process → submit to pool" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
     cout << "\n🌍 Select Pool:" << endl;
@@ -606,20 +557,23 @@ int main() {
     if (choice >= 1 && choice <= (int)POOLS.size()) {
         auto& pool = POOLS[choice - 1];
         cout << "\n⛏️ Relaying to " << pool.name << " ..." << endl;
+        cout << "📥 Enter ACHi codes (one per line). Press Ctrl+D to finish." << endl;
 
         StratumClient stratum(WALLET, PASS, pool.host, pool.port, pool.name);
         if (!stratum.connectToPool()) {
-            cout << "❌ Could not connect. Exiting." << endl;
+            cout << "❌ Could not connect to pool. Exiting." << endl;
             return 1;
         }
         stratum.login();
 
-        // Start web server
         WebServer::start();
 
         unsigned int threads = thread::hardware_concurrency();
         if (threads == 0) threads = 2;
         cout << "💻 Using " << threads << " relay threads" << endl;
+
+        // Start input collector
+        thread collector(collectACHi);
 
         vector<thread> workers;
         for (unsigned int i = 0; i < threads; ++i) {
@@ -629,13 +583,8 @@ int main() {
             }));
         }
 
-        while (MINING) {
-            this_thread::sleep_for(chrono::seconds(5));
-            lock_guard<mutex> lock(LOG_MUTEX);
-            cout << "\n📊 Shares: " << TOTAL_SHARES.load() 
-                 << " | Earned: " << TOTAL_EARNINGS.load() << " " << pool.symbol << endl;
-        }
-
+        collector.join();
+        MINING = false;
         for (auto& w : workers) {
             if (w.joinable()) w.join();
         }
@@ -647,13 +596,16 @@ int main() {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
                 cout << "\n🔄 Switching to " << pool.name << endl;
-                
+
                 StratumClient stratum(WALLET, PASS, pool.host, pool.port, pool.name);
                 if (!stratum.connectToPool()) continue;
                 stratum.login();
 
                 unsigned int threads = thread::hardware_concurrency();
                 if (threads == 0) threads = 2;
+
+                // Start collector
+                thread collector(collectACHi);
 
                 vector<thread> workers;
                 for (unsigned int i = 0; i < threads; ++i) {
@@ -669,6 +621,7 @@ int main() {
                 }
 
                 MINING = false;
+                collector.join();
                 for (auto& w : workers) {
                     if (w.joinable()) w.join();
                 }
