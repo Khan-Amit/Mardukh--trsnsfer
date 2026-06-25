@@ -1,16 +1,14 @@
 // ============================================================
-// ⚖️ MARDUK v9.0 — ONE BINARY. NO PYTHON. NO DEPS.
+// ⚖️ MARDUK RIG — Collects ACHi, matches crypto patterns, submits
 // ============================================================
 //
-// Self-contained mining rig that:
-//   - Generates ACHi codes internally
-//   - Filters via Sluice-Bench
-//   - Cleans via Egg Shorter
-//   - Submits to pools via Stratum
-//   - Serves web dashboard on port 8080
+// Reads ACHi codes from stdin (one per line)
+// Matches against crypto binary patterns
+// Submits to pool via Stratum
 //
-// Compile: g++ -std=c++11 -pthread -O3 -o marduk marduk.cpp
-// Run: ./marduk
+// Compile: g++ -std=c++11 -pthread -O3 -o marduk_rig marduk_rig.cpp
+// Run: ./marduk_rig
+// Then type ACHi codes or pipe them in.
 //
 // ============================================================
 
@@ -29,7 +27,8 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
-#include <random>
+#include <queue>
+#include <condition_variable>
 
 using namespace std;
 
@@ -39,12 +38,10 @@ using namespace std;
 
 const string WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
 const string PASS = "x";
-const int MIN_PATTERN_PRIORITY = 3;
 bool MINING = true;
 
 atomic<int> TOTAL_SHARES(0);
 atomic<double> TOTAL_EARNINGS(0.0);
-atomic<uint64_t> CYCLE(0);
 
 mutex LOG_MUTEX;
 
@@ -93,11 +90,12 @@ vector<PoolConfig> POOLS = {
 };
 
 // ============================================================
-// EGG SHORTER — removes bad chunks (000 and 111)
+// 🥚 EGG SHORTER — removes bad chunks
 // ============================================================
 
 class EggShorter {
 public:
+    // Convert string to binary
     inline string toBinary(const string& input) {
         string binary;
         binary.reserve(input.length() * 8);
@@ -109,6 +107,7 @@ public:
         return binary;
     }
 
+    // Remove chunks that are all 0s or all 1s (corrupted)
     inline string shorten(const string& binary) {
         string shortened;
         shortened.reserve(binary.length() / 3);
@@ -124,55 +123,89 @@ public:
         return shortened;
     }
 
+    // Full process: input → binary → remove bad chunks
     inline string process(const string& input) {
-        return shorten(toBinary(input));
+        string binary = toBinary(input);
+        return shorten(binary);
     }
 };
 
 // ============================================================
-// SLUICE-BENCH — catches patterns (the net)
+// ⛏️ SLUICE-BENCH — matches crypto binary structures
 // ============================================================
 
 class SluiceBench {
 private:
-    vector<pair<string, int>> xmrPatterns = {
-        {"101", 5}, {"110", 5}, {"011", 4}, {"1110", 4},
-        {"1001", 3}, {"0101", 3}, {"0011", 2}, {"1111", 5}
+    // BTC binary patterns (from actual Bitcoin block data)
+    vector<string> btcPatterns = {
+        "010",   // Block Header Start
+        "001",   // Transaction Marker
+        "111",   // Hash Marker (SHA-256)
+        "1010",  // Difficulty Target
+        "0101",  // Nonce Value
+        "1100",  // Merkle Root
+        "0010",  // Version
+        "1001",  // Mined Block
+        "0110"   // Coinbase Transaction
     };
-    vector<pair<string, int>> btcPatterns = {
-        {"010", 5}, {"001", 5}, {"111", 4}, {"1010", 4},
-        {"0101", 3}, {"1100", 4}, {"0010", 2}, {"1001", 5}, {"0110", 4}
+
+    // XMR binary patterns (from actual Monero block data)
+    vector<string> xmrPatterns = {
+        "101",   // Block Header Start
+        "110",   // Transaction Signature
+        "011",   // Hash Marker (Keccak)
+        "1110",  // Difficulty Target
+        "1001",  // Accepted Share
+        "0101",  // Nonce Value
+        "0011",  // Timestamp
+        "1111"   // RingCT Signature
     };
 
 public:
-    inline int getPriority(const string& chunk, const string& crypto = "XMR") {
-        const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
-        for (const auto& p : patterns) {
-            if (chunk.find(p.first) != string::npos) {
-                return p.second;
+    // Check if binary contains any BTC pattern
+    inline bool isBTC(const string& binary) {
+        for (const auto& p : btcPatterns) {
+            if (binary.find(p) != string::npos) {
+                return true;
             }
         }
-        return 0;
+        return false;
     }
 
-    inline string filter(const string& binary, const string& crypto = "XMR", int minPriority = 3) {
-        string filtered;
-        filtered.reserve(binary.length() / 2);
-        size_t len = binary.length();
-        for (size_t i = 0; i < len; i += 4) {
-            size_t rem = len - i;
-            if (rem < 4) break;
-            string chunk = binary.substr(i, 4);
-            if (getPriority(chunk, crypto) >= minPriority) {
-                filtered += chunk;
+    // Check if binary contains any XMR pattern
+    inline bool isXMR(const string& binary) {
+        for (const auto& p : xmrPatterns) {
+            if (binary.find(p) != string::npos) {
+                return true;
             }
         }
-        return filtered;
+        return false;
+    }
+
+    // Count matches for a specific crypto
+    inline int countMatches(const string& binary, const string& crypto = "XMR") {
+        const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
+        int matches = 0;
+        for (const auto& p : patterns) {
+            if (binary.find(p) != string::npos) {
+                matches++;
+            }
+        }
+        return matches;
+    }
+
+    // Detect which crypto the ACHi code matches
+    inline string detectCrypto(const string& binary) {
+        int xmrMatches = countMatches(binary, "XMR");
+        int btcMatches = countMatches(binary, "BTC");
+        if (xmrMatches > btcMatches) return "XMR";
+        if (btcMatches > xmrMatches) return "BTC";
+        return "UNKNOWN";
     }
 };
 
 // ============================================================
-// U-GROOVE TERNARY — 3,6,9 processing
+// 🔢 U-GROOVE TERNARY — 3,6,9 processing (from Hamnet)
 // ============================================================
 
 class UGrooveTernary {
@@ -215,7 +248,7 @@ public:
 };
 
 // ============================================================
-// STRATUM CLIENT — submits to pools
+// 📡 STRATUM CLIENT — submits to pools
 // ============================================================
 
 class StratumClient {
@@ -288,60 +321,76 @@ public:
 };
 
 // ============================================================
-// THE NET — generates ACHi, filters, submits
+// 🔄 THREAD-SAFE QUEUE — ACHi codes from stdin
 // ============================================================
 
-class TheNet {
+class DataQueue {
+private:
+    queue<string> q;
+    mutex mtx;
+    condition_variable cv;
+public:
+    void push(const string& data) {
+        lock_guard<mutex> lock(mtx);
+        q.push(data);
+        cv.notify_one();
+    }
+    bool pop(string& data) {
+        unique_lock<mutex> lock(mtx);
+        cv.wait(lock, [this](){ return !q.empty() || !MINING; });
+        if (!MINING && q.empty()) return false;
+        data = q.front();
+        q.pop();
+        return true;
+    }
+};
+
+DataQueue achiqueue;
+
+// ============================================================
+// ⚙️ THE RIG — processes ACHi codes from queue
+// ============================================================
+
+class TheRig {
 private:
     EggShorter sorter;
     SluiceBench net;
     UGrooveTernary ternary;
     int threadId;
-    string crypto;
-    string poolName;
     StratumClient* fisherman;
-    random_device rd;
-    mt19937 gen;
-    uniform_int_distribution<> dis;
 
 public:
-    TheNet(int tid, const string& c, const string& pn, StratumClient* f)
-        : threadId(tid), crypto(c), poolName(pn), fisherman(f), gen(rd()), dis(1, 1000000) {}
-
-    string generateACHi() {
-        uint64_t cycle = CYCLE.fetch_add(1);
-        uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(
-            chrono::steady_clock::now().time_since_epoch()
-        ).count();
-        int random = dis(gen);
-        stringstream ss;
-        ss << "ACHi_" << cycle << "_" << nonce << "_" << random << "_" << threadId;
-        return ss.str();
-    }
+    TheRig(int tid, StratumClient* f) : threadId(tid), fisherman(f) {}
 
     void work() {
         while (MINING) {
-            string achicode = generateACHi();
+            string achicode;
+            if (!achiqueue.pop(achicode)) break;
 
-            // 1. Egg Shorter
+            // 1. Egg Shorter → convert to binary, remove bad chunks
             string binary = sorter.process(achicode);
 
-            // 2. Sluice-Bench
-            string filtered = net.filter(binary, crypto, MIN_PATTERN_PRIORITY);
+            // 2. Sluice-Bench → detect which crypto this matches
+            string crypto = net.detectCrypto(binary);
 
-            if (filtered.empty()) {
-                this_thread::sleep_for(chrono::milliseconds(1));
+            // 3. If unknown, skip
+            if (crypto == "UNKNOWN") {
                 continue;
             }
 
-            // 3. U-Groove Ternary
-            string ternaryData = ternary.process(filtered);
+            // 4. Count matches to ensure quality
+            int matches = net.countMatches(binary, crypto);
+            if (matches < 2) {
+                continue; // Not enough pattern matches
+            }
 
-            // 4. Final share
-            string shareData = filtered + ternaryData;
-            if (shareData.empty()) shareData = binary;
+            // 5. U-Groove Ternary (3,6,9 processing)
+            string ternaryData = ternary.process(binary);
 
-            // 5. Submit to pool
+            // 6. Final share data
+            string shareData = binary + ternaryData;
+
+            // 7. Submit to pool
             if (fisherman && fisherman->isConnected()) {
                 uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(
                     chrono::steady_clock::now().time_since_epoch()
@@ -354,14 +403,13 @@ public:
                     saveEarnings(TOTAL_EARNINGS.load());
 
                     lock_guard<mutex> lock(LOG_MUTEX);
-                    cout << "🐟 CAUGHT #" << shares << " | +" << earn << " XMR | " << poolName << endl;
+                    cout << "✅ ACCEPTED #" << shares << " | +" << earn << " " << crypto << " | " << achicode << endl;
                 }
             }
 
-            // 6. Write status
+            // 8. Write status
             writeStatus();
 
-            // 7. Delay
             this_thread::sleep_for(chrono::milliseconds(10));
         }
     }
@@ -370,11 +418,9 @@ public:
         ofstream file("miner_status.json");
         if (file.is_open()) {
             file << "{";
-            file << "\"hashrate\":" << (TOTAL_SHARES.load() * 10) << ",";
             file << "\"shares\":" << TOTAL_SHARES.load() << ",";
             file << "\"earnings\":" << TOTAL_EARNINGS.load() << ",";
-            file << "\"pool\":\"" << poolName << "\",";
-            file << "\"crypto\":\"" << crypto << "\"";
+            file << "\"pool\":\"" << (fisherman ? "Connected" : "Disconnected") << "\"";
             file << "}";
             file.close();
         }
@@ -382,7 +428,20 @@ public:
 };
 
 // ============================================================
-// WEB SERVER — built-in
+// 📥 INPUT COLLECTOR — reads ACHi codes from stdin
+// ============================================================
+
+void collectInput() {
+    string line;
+    while (MINING && getline(cin, line)) {
+        if (!line.empty()) {
+            achiqueue.push(line);
+        }
+    }
+}
+
+// ============================================================
+// 🌐 WEB SERVER — shows status
 // ============================================================
 
 class WebServer {
@@ -393,7 +452,7 @@ private:
             stringstream ss; ss << file.rdbuf();
             return ss.str();
         }
-        return R"({"hashrate":0,"shares":0,"earnings":0,"pool":"none","crypto":"none"})";
+        return R"({"shares":0,"earnings":0,"pool":"none"})";
     }
 
 public:
@@ -433,7 +492,7 @@ public:
                 if (path == "/status" || path == "/status/") {
                     response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + getStatusJSON();
                 } else {
-                    string html = R"(<!DOCTYPE html><html><head><title>Marduk Rig</title><style>body{background:#0a0e1a;color:#88ffaa;font-family:monospace;padding:2rem;text-align:center;}h1{color:#ffcc00;}</style></head><body><h1>⚖️ MARDUK RIG</h1><p>Mining active. Shares: )" + to_string(TOTAL_SHARES.load()) + R"(</p><p>Earned: )" + to_string(TOTAL_EARNINGS.load()) + R"( XMR</p></body></html>)";
+                    string html = R"(<!DOCTYPE html><html><head><title>Marduk Rig</title><style>body{background:#0a0e1a;color:#88ffaa;font-family:monospace;padding:2rem;text-align:center;}h1{color:#ffcc00;}</style></head><body><h1>⚖️ MARDUK RIG</h1><p>Shares: )" + to_string(TOTAL_SHARES.load()) + R"(</p><p>Earned: )" + to_string(TOTAL_EARNINGS.load()) + R"( XMR</p></body></html>)";
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html;
                 }
                 send(client, response.c_str(), response.size(), 0);
@@ -445,17 +504,18 @@ public:
 };
 
 // ============================================================
-// MAIN
+// 🚀 MAIN
 // ============================================================
 
 int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK v9.0 — ONE BINARY. NO PYTHON. NO DEPS." << endl;
+    cout << "⚖️ MARDUK RIG — Collects ACHi → Matches Crypto Patterns" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Saved: " << TOTAL_EARNINGS.load() << " XMR" << endl;
+    cout << "📡 Mode: stdin → ACHi → Pattern Match → Pool" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
     cout << "\n🌍 Select pool:" << endl;
@@ -472,6 +532,7 @@ int main() {
     if (choice >= 1 && choice <= (int)POOLS.size()) {
         auto& pool = POOLS[choice - 1];
         cout << "\n🌊 Mining " << pool.name << " ..." << endl;
+        cout << "📥 Type ACHi codes (one per line). Press Ctrl+D to stop." << endl;
 
         StratumClient fisherman(WALLET, PASS, pool.host, pool.port, pool.name);
         if (!fisherman.connectToPool()) {
@@ -486,27 +547,29 @@ int main() {
         if (threads == 0) threads = 2;
         cout << "💻 Using " << threads << " threads" << endl;
 
-        vector<thread> nets;
+        // Start input collector
+        thread collector(collectInput);
+
+        vector<thread> rigs;
         for (unsigned int i = 0; i < threads; ++i) {
-            nets.push_back(thread([&pool, &fisherman, i]() {
-                TheNet net(i, pool.symbol, pool.name, &fisherman);
-                net.work();
+            rigs.push_back(thread([&fisherman, i]() {
+                TheRig rig(i, &fisherman);
+                rig.work();
             }));
         }
 
-        while (MINING) {
-            this_thread::sleep_for(chrono::seconds(5));
-            lock_guard<mutex> lock(LOG_MUTEX);
-            cout << "\n📊 Shares: " << TOTAL_SHARES.load() << " | Earned: " << TOTAL_EARNINGS.load() << " " << pool.symbol << endl;
-        }
-
-        for (auto& n : nets) {
-            if (n.joinable()) n.join();
+        collector.join();
+        MINING = false;
+        for (auto& r : rigs) {
+            if (r.joinable()) r.join();
         }
 
     } else if (choice == (int)POOLS.size() + 1) {
         cout << "\n🔄 Cycling pools..." << endl;
         WebServer::start();
+
+        thread collector(collectInput);
+
         while (MINING) {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
@@ -518,11 +581,11 @@ int main() {
                 unsigned int threads = thread::hardware_concurrency();
                 if (threads == 0) threads = 2;
 
-                vector<thread> nets;
+                vector<thread> rigs;
                 for (unsigned int i = 0; i < threads; ++i) {
-                    nets.push_back(thread([&pool, &fisherman, i]() {
-                        TheNet net(i, pool.symbol, pool.name, &fisherman);
-                        net.work();
+                    rigs.push_back(thread([&fisherman, i]() {
+                        TheRig rig(i, &fisherman);
+                        rig.work();
                     }));
                 }
 
@@ -532,12 +595,15 @@ int main() {
                 }
 
                 MINING = false;
-                for (auto& n : nets) {
-                    if (n.joinable()) n.join();
+                for (auto& r : rigs) {
+                    if (r.joinable()) r.join();
                 }
                 MINING = true;
             }
         }
+
+        collector.join();
+
     } else {
         cout << "Exiting." << endl;
     }
