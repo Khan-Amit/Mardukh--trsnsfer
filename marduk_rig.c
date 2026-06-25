@@ -1,10 +1,6 @@
 // ============================================================
 // MARDUK RIG — FINAL WORKING
 // ============================================================
-// Compile: g++ -std=c++11 -pthread -O3 -o marduk_rig marduk_rig.cpp
-// Run: ./marduk_rig
-// ============================================================
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -25,34 +21,20 @@
 
 using namespace std;
 
-// CONFIG
 #define WALLET "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb"
 #define POOL_HOST "pool.supportxmr.com"
 #define POOL_PORT 3333
 #define PASS "x"
-#define EARNINGS_FILE "earnings.dat"
 
 atomic<int> TOTAL_SHARES(0);
 atomic<int> XSA_COUNTER(0);
 double TOTAL_EARNINGS = 0.0;
 mutex earnings_mutex;
-bool MINING = true;
 bool last_pool_response = true;
-mutex LOG_MUTEX;
 
-// PERSISTENT EARNINGS
-double loadEarnings() {
-    ifstream file(EARNINGS_FILE);
-    double val = 0.0;
-    if (file.is_open()) { file >> val; file.close(); }
-    return val;
-}
-void saveEarnings(double earnings) {
-    ofstream file(EARNINGS_FILE);
-    if (file.is_open()) { file << earnings; file.close(); }
-}
-
-// EGG SHORTER
+// ============================================================
+// EGG SHORTER & SLUICE-BENCH (same as before)
+// ============================================================
 void to_binary(const unsigned char* data, int len, char* output) {
     int idx = 0;
     for (int i = 0; i < len && idx < 4096; i++) {
@@ -78,8 +60,6 @@ void egg_shorter(const char* binary, char* output) {
     }
     output[idx] = '\0';
 }
-
-// SLUICE-BENCH
 int has_xmr_pattern(const char* binary) {
     const char* patterns[] = {"101","110","011","1110","1001","0101","0011","1111"};
     for (int i=0;i<8;i++) if (strstr(binary, patterns[i])) return 1;
@@ -91,7 +71,9 @@ int has_btc_pattern(const char* binary) {
     return 0;
 }
 
+// ============================================================
 // STRATUM CLIENT
+// ============================================================
 int connect_pool() {
     int s = socket(AF_INET, SOCK_STREAM, 0);
     if (s < 0) return -1;
@@ -129,7 +111,9 @@ int pool_accept(int s) {
     return 0;
 }
 
-// WEB SERVER
+// ============================================================
+// WEB SERVER — Serves index.html and /status
+// ============================================================
 class WebServer {
 private:
     int server_fd;
@@ -162,29 +146,54 @@ public:
                 char buffer[4096] = {0};
                 recv(client, buffer, 4095, 0);
 
-                double earnings_copy;
-                {
-                    lock_guard<mutex> lock(earnings_mutex);
-                    earnings_copy = TOTAL_EARNINGS;
+                // Parse request path
+                string request(buffer);
+                string path = "/";
+                if (request.find("GET ") != string::npos) {
+                    size_t start = request.find("GET ") + 4;
+                    size_t end = request.find(" ", start);
+                    if (end != string::npos) path = request.substr(start, end - start);
                 }
 
-                string json = "{";
-                json += "\"shares\":" + to_string(TOTAL_SHARES.load()) + ",";
-                json += "\"earnings\":" + to_string(earnings_copy) + ",";
-                json += "\"accepted\":" + to_string(TOTAL_SHARES.load()) + ",";
-                json += "\"rejected\":0,";
-                json += "\"counter\":" + to_string(XSA_COUNTER.load()) + ",";
-                json += "\"pool_response\":\"" + string(last_pool_response ? "accepted" : "rejected") + "\",";
-                json += "\"real_earnings\":" + to_string(earnings_copy) + ",";
-                json += "\"status\":\"online\"";
-                json += "}";
-
-                string response = "HTTP/1.1 200 OK\r\n";
-                response += "Content-Type: application/json\r\n";
-                response += "Access-Control-Allow-Origin: *\r\n";
-                response += "\r\n";
-                response += json;
-
+                string response;
+                if (path == "/status" || path == "/status/") {
+                    // JSON response
+                    double earnings_copy;
+                    {
+                        lock_guard<mutex> lock(earnings_mutex);
+                        earnings_copy = TOTAL_EARNINGS;
+                    }
+                    string json = "{";
+                    json += "\"shares\":" + to_string(TOTAL_SHARES.load()) + ",";
+                    json += "\"earnings\":" + to_string(earnings_copy) + ",";
+                    json += "\"accepted\":" + to_string(TOTAL_SHARES.load()) + ",";
+                    json += "\"rejected\":0,";
+                    json += "\"counter\":" + to_string(XSA_COUNTER.load()) + ",";
+                    json += "\"pool_response\":\"" + string(last_pool_response ? "accepted" : "rejected") + "\",";
+                    json += "\"real_earnings\":" + to_string(earnings_copy) + ",";
+                    json += "\"status\":\"online\"";
+                    json += "}";
+                    response = "HTTP/1.1 200 OK\r\n";
+                    response += "Content-Type: application/json\r\n";
+                    response += "Access-Control-Allow-Origin: *\r\n";
+                    response += "\r\n";
+                    response += json;
+                } else {
+                    // Serve index.html
+                    ifstream file("index.html");
+                    if (file.is_open()) {
+                        stringstream ss;
+                        ss << file.rdbuf();
+                        string html = ss.str();
+                        response = "HTTP/1.1 200 OK\r\n";
+                        response += "Content-Type: text/html\r\n";
+                        response += "\r\n";
+                        response += html;
+                    } else {
+                        response = "HTTP/1.1 404 Not Found\r\n\r\n";
+                        response += "index.html not found. Place it in the same directory.";
+                    }
+                }
                 send(client, response.c_str(), response.size(), 0);
                 close(client);
             }
@@ -194,14 +203,15 @@ public:
     void stop() { running = false; }
 };
 
+// ============================================================
 // PROCESS DATA
+// ============================================================
 void process_data(const char* raw, int sock) {
     char binary[4096], washed[4096];
     to_binary((const unsigned char*)raw, strlen(raw), binary);
     int xmr = has_xmr_pattern(binary);
     int btc = has_btc_pattern(binary);
     if (!xmr && !btc) {
-        lock_guard<mutex> lock(LOG_MUTEX);
         cout << "🚫 REJECTED\n";
         return;
     }
@@ -214,41 +224,33 @@ void process_data(const char* raw, int sock) {
     {
         lock_guard<mutex> lock(earnings_mutex);
         TOTAL_EARNINGS += earn;
-        saveEarnings(TOTAL_EARNINGS);
     }
-
     if (sock >= 0) {
         pool_submit(sock, XSA_COUNTER.load());
         int accepted = pool_accept(sock);
         if (accepted) {
-            lock_guard<mutex> lock(LOG_MUTEX);
             cout << "✅ ACCEPTED share #" << TOTAL_SHARES.load() << "\n";
         }
     }
 }
 
+// ============================================================
 // MAIN
+// ============================================================
 int main() {
     cout << "\n════════════════════════════════════════════════════\n";
-    cout << "⚖️ MARDUK RIG — FINAL WORKING\n";
+    cout << "⚖️ MARDUK RIG — FINAL\n";
     cout << "════════════════════════════════════════════════════\n";
     cout << "📤 Wallet: " << WALLET << "\n";
     cout << "🌊 Pool: " << POOL_HOST << ":" << POOL_PORT << "\n";
     cout << "────────────────────────────────────────────────────\n";
-
-    double earnings = loadEarnings();
-    {
-        lock_guard<mutex> lock(earnings_mutex);
-        TOTAL_EARNINGS = earnings;
-    }
-    cout << "💰 Saved earnings: " << earnings << " XMR\n";
 
     int sock = connect_pool();
     if (sock >= 0) {
         pool_login(sock);
         cout << "✅ Connected to pool\n";
     } else {
-        cout << "⚠️ Pool offline — running in offline mode\n";
+        cout << "⚠️ Pool offline — running offline\n";
     }
 
     WebServer web;
@@ -266,10 +268,6 @@ int main() {
 
     web.stop();
     if (sock >= 0) close(sock);
-    {
-        lock_guard<mutex> lock(earnings_mutex);
-        saveEarnings(TOTAL_EARNINGS);
-    }
 
     cout << "\n════════════════════════════════════════════════════\n";
     cout << "📊 Shares: " << TOTAL_SHARES.load() << "\n";
