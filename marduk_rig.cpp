@@ -1,12 +1,16 @@
 // ============================================================
-// ⚖️ MARDUK HAMNET v2.0 — Connects to Hamnet Backend
+// ⚖️ MARDUK v9.0 — ONE BINARY. NO PYTHON. NO DEPS.
 // ============================================================
 //
-// Receives ACHi codes from Hamnet-SA-V1 backend (Python API)
-// via HTTP or WebSocket. Filters, cleans, submits to pools.
+// Self-contained mining rig that:
+//   - Generates ACHi codes internally
+//   - Filters via Sluice-Bench
+//   - Cleans via Egg Shorter
+//   - Submits to pools via Stratum
+//   - Serves web dashboard on port 8080
 //
-// Compile: g++ -std=c++11 -pthread -O3 -o marduk_hamnet marduk_hamnet.cpp
-// Run: ./marduk_hamnet
+// Compile: g++ -std=c++11 -pthread -O3 -o marduk marduk.cpp
+// Run: ./marduk
 //
 // ============================================================
 
@@ -25,16 +29,12 @@
 #include <vector>
 #include <atomic>
 #include <mutex>
-#include <queue>
-#include <condition_variable>
 #include <random>
-#include <algorithm>
-#include <cmath>
 
 using namespace std;
 
 // ============================================================
-// 🔧 CONFIGURATION
+// CONFIGURATION
 // ============================================================
 
 const string WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
@@ -44,11 +44,12 @@ bool MINING = true;
 
 atomic<int> TOTAL_SHARES(0);
 atomic<double> TOTAL_EARNINGS(0.0);
+atomic<uint64_t> CYCLE(0);
 
 mutex LOG_MUTEX;
 
 // ============================================================
-// 💾 PERSISTENT EARNINGS
+// PERSISTENT EARNINGS
 // ============================================================
 
 double loadEarnings() {
@@ -64,7 +65,7 @@ void saveEarnings(double earnings) {
 }
 
 // ============================================================
-// 🌍 POOL CONFIGURATIONS
+// POOL CONFIGURATIONS
 // ============================================================
 
 struct PoolConfig {
@@ -92,7 +93,7 @@ vector<PoolConfig> POOLS = {
 };
 
 // ============================================================
-// 🥚 EGG SHORTER
+// EGG SHORTER — removes bad chunks (000 and 111)
 // ============================================================
 
 class EggShorter {
@@ -129,7 +130,7 @@ public:
 };
 
 // ============================================================
-// ⛏️ SLUICE-BENCH
+// SLUICE-BENCH — catches patterns (the net)
 // ============================================================
 
 class SluiceBench {
@@ -171,7 +172,7 @@ public:
 };
 
 // ============================================================
-// 🔢 U-GROOVE TERNARY
+// U-GROOVE TERNARY — 3,6,9 processing
 // ============================================================
 
 class UGrooveTernary {
@@ -214,63 +215,7 @@ public:
 };
 
 // ============================================================
-// 📡 HTTP CLIENT — Connects to Hamnet backend
-// ============================================================
-
-class HTTPClient {
-private:
-    int sock;
-    string host;
-    int port;
-
-public:
-    HTTPClient() : sock(-1), host("localhost"), port(5000) {}
-
-    bool connectToHamnet() {
-        sock = socket(AF_INET, SOCK_STREAM, 0);
-        if (sock < 0) return false;
-        struct hostent* server = gethostbyname(host.c_str());
-        if (!server) return false;
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
-        addr.sin_port = htons(port);
-        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-            close(sock);
-            sock = -1;
-            return false;
-        }
-        return true;
-    }
-
-    string getACHi() {
-        if (sock < 0) return "";
-        string request = "GET /achicode HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n";
-        send(sock, request.c_str(), request.length(), 0);
-        char buffer[4096];
-        int n = recv(sock, buffer, 4095, 0);
-        if (n <= 0) return "";
-        buffer[n] = '\0';
-        string response(buffer);
-        size_t start = response.find("\r\n\r\n");
-        if (start == string::npos) return "";
-        string body = response.substr(start + 4);
-        // Trim whitespace
-        body.erase(0, body.find_first_not_of(" \t\n\r"));
-        body.erase(body.find_last_not_of(" \t\n\r") + 1);
-        return body;
-    }
-
-    void disconnect() {
-        if (sock >= 0) { close(sock); sock = -1; }
-    }
-
-    bool isConnected() const { return sock >= 0; }
-};
-
-// ============================================================
-// 📡 STRATUM CLIENT
+// STRATUM CLIENT — submits to pools
 // ============================================================
 
 class StratumClient {
@@ -343,34 +288,7 @@ public:
 };
 
 // ============================================================
-// 🔄 THREAD-SAFE QUEUE — ACHi codes from Hamnet
-// ============================================================
-
-class DataQueue {
-private:
-    queue<string> q;
-    mutex mtx;
-    condition_variable cv;
-public:
-    void push(const string& data) {
-        lock_guard<mutex> lock(mtx);
-        q.push(data);
-        cv.notify_one();
-    }
-    bool pop(string& data) {
-        unique_lock<mutex> lock(mtx);
-        cv.wait(lock, [this](){ return !q.empty() || !MINING; });
-        if (!MINING && q.empty()) return false;
-        data = q.front();
-        q.pop();
-        return true;
-    }
-};
-
-DataQueue achiqueue;
-
-// ============================================================
-// ⚙️ THE NET — Receives ACHi from Hamnet, filters, submits
+// THE NET — generates ACHi, filters, submits
 // ============================================================
 
 class TheNet {
@@ -382,15 +300,28 @@ private:
     string crypto;
     string poolName;
     StratumClient* fisherman;
+    random_device rd;
+    mt19937 gen;
+    uniform_int_distribution<> dis;
 
 public:
     TheNet(int tid, const string& c, const string& pn, StratumClient* f)
-        : threadId(tid), crypto(c), poolName(pn), fisherman(f) {}
+        : threadId(tid), crypto(c), poolName(pn), fisherman(f), gen(rd()), dis(1, 1000000) {}
+
+    string generateACHi() {
+        uint64_t cycle = CYCLE.fetch_add(1);
+        uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(
+            chrono::steady_clock::now().time_since_epoch()
+        ).count();
+        int random = dis(gen);
+        stringstream ss;
+        ss << "ACHi_" << cycle << "_" << nonce << "_" << random << "_" << threadId;
+        return ss.str();
+    }
 
     void work() {
         while (MINING) {
-            string achicode;
-            if (!achiqueue.pop(achicode)) break;
+            string achicode = generateACHi();
 
             // 1. Egg Shorter
             string binary = sorter.process(achicode);
@@ -398,17 +329,19 @@ public:
             // 2. Sluice-Bench
             string filtered = net.filter(binary, crypto, MIN_PATTERN_PRIORITY);
 
-            // 3. If filtered is empty, this ACHi is not valid
-            if (filtered.empty()) continue;
+            if (filtered.empty()) {
+                this_thread::sleep_for(chrono::milliseconds(1));
+                continue;
+            }
 
-            // 4. U-Groove Ternary
+            // 3. U-Groove Ternary
             string ternaryData = ternary.process(filtered);
 
-            // 5. Final share
+            // 4. Final share
             string shareData = filtered + ternaryData;
             if (shareData.empty()) shareData = binary;
 
-            // 6. Submit to pool
+            // 5. Submit to pool
             if (fisherman && fisherman->isConnected()) {
                 uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(
                     chrono::steady_clock::now().time_since_epoch()
@@ -421,14 +354,14 @@ public:
                     saveEarnings(TOTAL_EARNINGS.load());
 
                     lock_guard<mutex> lock(LOG_MUTEX);
-                    cout << "🐟 CAUGHT #" << shares << " | +" << earn << " XMR | " << poolName << " | ACHi: " << achicode << endl;
+                    cout << "🐟 CAUGHT #" << shares << " | +" << earn << " XMR | " << poolName << endl;
                 }
             }
 
-            // 7. Write status
+            // 6. Write status
             writeStatus();
 
-            // 8. Small delay to prevent CPU overload
+            // 7. Delay
             this_thread::sleep_for(chrono::milliseconds(10));
         }
     }
@@ -449,44 +382,11 @@ public:
 };
 
 // ============================================================
-// 📥 HAMNET COLLECTOR — Fetches ACHi codes from Hamnet backend
-// ============================================================
-
-void collectFromHamnet() {
-    HTTPClient client;
-    while (MINING) {
-        if (!client.isConnected()) {
-            if (!client.connectToHamnet()) {
-                this_thread::sleep_for(chrono::seconds(5));
-                continue;
-            }
-            cout << "📡 Connected to Hamnet backend (localhost:5000)" << endl;
-        }
-
-        string achicode = client.getACHi();
-        if (!achicode.empty() && achicode.find("ACHi") != string::npos) {
-            achiqueue.push(achicode);
-        } else {
-            // If no ACHi, wait a bit
-            this_thread::sleep_for(chrono::milliseconds(100));
-        }
-    }
-    client.disconnect();
-}
-
-// ============================================================
-// 🌐 WEB SERVER
+// WEB SERVER — built-in
 // ============================================================
 
 class WebServer {
 private:
-    static string readFile(const string& filename) {
-        ifstream file(filename);
-        if (!file.is_open()) return "";
-        stringstream ss; ss << file.rdbuf();
-        return ss.str();
-    }
-
     static string getStatusJSON() {
         ifstream file("miner_status.json");
         if (file.is_open()) {
@@ -500,7 +400,7 @@ public:
     static void start() {
         thread([](){
             int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-            if (server_fd < 0) { cerr << "Web server socket failed" << endl; return; }
+            if (server_fd < 0) { cerr << "Web server failed" << endl; return; }
             int opt = 1;
             setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
             struct sockaddr_in addr;
@@ -513,7 +413,7 @@ public:
                 return;
             }
             listen(server_fd, 3);
-            cout << "🌐 Dashboard at http://127.0.0.1:8080" << endl;
+            cout << "🌐 Dashboard: http://127.0.0.1:8080" << endl;
 
             while (MINING) {
                 struct sockaddr_in client_addr;
@@ -533,10 +433,7 @@ public:
                 if (path == "/status" || path == "/status/") {
                     response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + getStatusJSON();
                 } else {
-                    string html = readFile("index.html");
-                    if (html.empty()) {
-                        html = R"(<!DOCTYPE html><html><head><title>Marduk Hamnet</title><style>body{background:#0a0e1a;color:#88ffaa;font-family:monospace;padding:2rem;text-align:center;}h1{color:#ffcc00;}</style></head><body><h1>⚖️ MARDUK HAMNET</h1><p>Rig is mining. Check terminal for details.</p><p>Shares: )" + to_string(TOTAL_SHARES.load()) + R"(</p><p>Earned: )" + to_string(TOTAL_EARNINGS.load()) + R"( XMR</p></body></html>)";
-                    }
+                    string html = R"(<!DOCTYPE html><html><head><title>Marduk Rig</title><style>body{background:#0a0e1a;color:#88ffaa;font-family:monospace;padding:2rem;text-align:center;}h1{color:#ffcc00;}</style></head><body><h1>⚖️ MARDUK RIG</h1><p>Mining active. Shares: )" + to_string(TOTAL_SHARES.load()) + R"(</p><p>Earned: )" + to_string(TOTAL_EARNINGS.load()) + R"( XMR</p></body></html>)";
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html;
                 }
                 send(client, response.c_str(), response.size(), 0);
@@ -548,28 +445,24 @@ public:
 };
 
 // ============================================================
-// 🚀 MAIN
+// MAIN
 // ============================================================
 
 int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK HAMNET v2.0 — Connects to Hamnet Backend" << endl;
+    cout << "⚖️ MARDUK v9.0 — ONE BINARY. NO PYTHON. NO DEPS." << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
-    cout << "💰 Already in wallet: " << TOTAL_EARNINGS.load() << " XMR" << endl;
-    cout << "🥚 Egg Shorter: Active" << endl;
-    cout << "⛏️ Sluice-Bench: Active" << endl;
-    cout << "🔢 U-Groove Ternary: Active (3,6,9)" << endl;
-    cout << "📡 Mode: Hamnet Backend → ACHi → Filter → Pool" << endl;
+    cout << "💰 Saved: " << TOTAL_EARNINGS.load() << " XMR" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
-    cout << "\n🌍 Select fishing spot (pool):" << endl;
+    cout << "\n🌍 Select pool:" << endl;
     for (size_t i = 0; i < POOLS.size(); ++i) {
         cout << "  [" << i + 1 << "] " << POOLS[i].name << " (" << POOLS[i].symbol << ")" << endl;
     }
-    cout << "  [" << POOLS.size() + 1 << "] 🔄 FISH ALL (cycle)" << endl;
+    cout << "  [" << POOLS.size() + 1 << "] 🔄 CYCLE ALL" << endl;
     cout << "  [" << POOLS.size() + 2 << "] 🚪 EXIT" << endl;
     cout << "\n> ";
 
@@ -578,23 +471,20 @@ int main() {
 
     if (choice >= 1 && choice <= (int)POOLS.size()) {
         auto& pool = POOLS[choice - 1];
-        cout << "\n🌊 Placing net in " << pool.name << " ..." << endl;
+        cout << "\n🌊 Mining " << pool.name << " ..." << endl;
 
         StratumClient fisherman(WALLET, PASS, pool.host, pool.port, pool.name);
         if (!fisherman.connectToPool()) {
-            cout << "⚠️ Pool connection failed. Running in offline mode..." << endl;
+            cout << "⚠️ Pool offline – running in offline mode" << endl;
         } else {
             fisherman.login();
         }
 
         WebServer::start();
 
-        // Start Hamnet collector thread
-        thread hamnetCollector(collectFromHamnet);
-
         unsigned int threads = thread::hardware_concurrency();
         if (threads == 0) threads = 2;
-        cout << "💻 Using " << threads << " nets" << endl;
+        cout << "💻 Using " << threads << " threads" << endl;
 
         vector<thread> nets;
         for (unsigned int i = 0; i < threads; ++i) {
@@ -610,26 +500,20 @@ int main() {
             cout << "\n📊 Shares: " << TOTAL_SHARES.load() << " | Earned: " << TOTAL_EARNINGS.load() << " " << pool.symbol << endl;
         }
 
-        hamnetCollector.join();
         for (auto& n : nets) {
             if (n.joinable()) n.join();
         }
 
     } else if (choice == (int)POOLS.size() + 1) {
-        cout << "\n🔄 FISHING ALL POOLS (cycling every 30 seconds)..." << endl;
+        cout << "\n🔄 Cycling pools..." << endl;
         WebServer::start();
-
-        thread hamnetCollector(collectFromHamnet);
-
         while (MINING) {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
-                cout << "\n🔄 Moving net to " << pool.name << endl;
+                cout << "\n🔄 Switching to " << pool.name << endl;
 
                 StratumClient fisherman(WALLET, PASS, pool.host, pool.port, pool.name);
-                if (fisherman.connectToPool()) {
-                    fisherman.login();
-                }
+                if (fisherman.connectToPool()) fisherman.login();
 
                 unsigned int threads = thread::hardware_concurrency();
                 if (threads == 0) threads = 2;
@@ -654,9 +538,6 @@ int main() {
                 MINING = true;
             }
         }
-
-        hamnetCollector.join();
-
     } else {
         cout << "Exiting." << endl;
     }
