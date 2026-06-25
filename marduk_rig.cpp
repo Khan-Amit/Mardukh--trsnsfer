@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK RIG v5.0 — COMPLETE OPTIMIZED
+// ⚖️ MARDUK RIG v5.0 — COMPLETE OPTIMIZED + PERSISTENT
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -17,6 +17,8 @@
 //   ✅ Real Share Submission
 //   ✅ Wallet Integration
 //   ✅ Pattern Database (XMR + BTC)
+//   ✅ PERSISTENT EARNINGS (saves to file)
+//   ✅ STATUS OUTPUT (miner_status.json)
 //
 // ============================================================
 
@@ -60,6 +62,28 @@ atomic<double> CURRENT_HASHRATE(0.0);
 mutex LOG_MUTEX;
 
 // ============================================================
+// 💾 PERSISTENT EARNINGS
+// ============================================================
+
+double loadEarnings() {
+    ifstream file("earnings.dat");
+    double val = 0.0;
+    if (file.is_open()) {
+        file >> val;
+        file.close();
+    }
+    return val;
+}
+
+void saveEarnings(double earnings) {
+    ofstream file("earnings.dat");
+    if (file.is_open()) {
+        file << earnings;
+        file.close();
+    }
+}
+
+// ============================================================
 // 🌍 POOL CONFIGURATIONS
 // ============================================================
 
@@ -95,7 +119,6 @@ vector<PoolConfig> POOLS = {
 
 class EggShorter {
 public:
-    // Fast binary conversion with bit-level optimization
     inline string readBinary(const string& input) {
         string binary;
         binary.reserve(input.length() * 8);
@@ -107,7 +130,6 @@ public:
         return binary;
     }
 
-    // Optimized shortening — only keep meaningful 3-bit chunks
     inline string shortenBinary(const string& binary) {
         string shortened;
         shortened.reserve(binary.length() / 3);
@@ -134,11 +156,10 @@ public:
 
 class SluiceBench {
 private:
-    // XMR Pattern Database
     struct Pattern {
         string pattern;
         string description;
-        int priority;  // 1-5 (5 = highest value)
+        int priority;
     };
 
     vector<Pattern> xmrPatterns = {
@@ -165,7 +186,6 @@ private:
     };
 
 public:
-    // Check if chunk matches any pattern in database
     inline bool matchesPattern(const string& chunk, const string& crypto = "XMR") {
         const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
         for (const auto& p : patterns) {
@@ -176,7 +196,6 @@ public:
         return false;
     }
 
-    // Get priority of a chunk
     inline int getPriority(const string& chunk, const string& crypto = "XMR") {
         const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
         for (const auto& p : patterns) {
@@ -187,7 +206,6 @@ public:
         return 0;
     }
 
-    // Filter — keep only patterns above minPriority
     inline string filter(const string& binary, const string& crypto = "XMR", int minPriority = 3) {
         string filtered;
         filtered.reserve(binary.length() / 2);
@@ -204,7 +222,6 @@ public:
         return filtered;
     }
 
-    // Display pattern database
     void displayDatabase(const string& crypto = "XMR") {
         const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
         cout << "\n" << (crypto == "XMR" ? "🟠" : "🟡") << " " << crypto << " PATTERN DATABASE:" << endl;
@@ -263,12 +280,12 @@ public:
 class DNAAnalyzer {
 public:
     struct DNAProfile {
-        double speed;      // 0-1 (Young/Old)
-        int length;        // Experience
-        string structure;  // MALE/FEMALE/NEUTRAL
-        string ternary;    // Quantum state
-        double entropy;    // Information density
-        double weight;     // Mining weight
+        double speed;
+        int length;
+        string structure;
+        string ternary;
+        double entropy;
+        double weight;
     };
 
     inline double readSpeed(const string& binary) {
@@ -376,23 +393,17 @@ public:
             iter++;
             nonce++;
             
-            // 1. Generate unique input
             string input = "block_" + to_string(nonce) + "_" + to_string(threadId) + "_" + to_string(time(nullptr));
 
-            // 2. EGG SHORTER — Read and filter binary
             string binary = egg.process(input);
 
-            // 3. DNA ANALYSIS
             auto profile = dna.analyze(binary);
             double weight = profile.weight;
 
-            // 4. SLUICE-BENCH — Filter with pattern database
             string filtered = sluice.filter(binary, crypto, MIN_PATTERN_PRIORITY);
 
-            // 5. TERNARY — Quantum processing
             string ternaryData = ternary.processTernary(filtered);
 
-            // 6. CACHE-OPTIMIZED MIXING
             #if defined(__GNUC__) || defined(__clang__)
                 __builtin_prefetch(&scratchpad[(address + 4) & MASK], 1, 3);
             #endif
@@ -407,11 +418,11 @@ public:
 
             TOTAL_HASHES++;
 
-            // 7. REAL SHARE SUBMISSION
             if ((current.state & 0xFFFFFFFF) == 0 && !ternaryData.empty()) {
                 int shares = TOTAL_SHARES.fetch_add(1) + 1;
                 double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
                 TOTAL_EARNINGS += earn;
+                saveEarnings(TOTAL_EARNINGS.load());
 
                 lock_guard<mutex> lock(LOG_MUTEX);
                 cout << "✅ REAL SHARE #" << shares << " | +" << earn << " XMR | " << poolName << endl;
@@ -419,7 +430,6 @@ public:
                      << " | Entropy: " << profile.entropy << " | Weight: " << weight << endl;
             }
 
-            // 8. PROGRESS LOG
             if (iter % 100 == 0) {
                 double hashrate = (double)TOTAL_HASHES.load() / (iter * 0.001);
                 CURRENT_HASHRATE = hashrate;
@@ -428,7 +438,6 @@ public:
                      << TOTAL_SHARES.load() << " | Earned: " << TOTAL_EARNINGS.load() 
                      << " " << crypto << endl;
 
-                // Write status for dashboard
                 writeStatus(hashrate);
             }
 
@@ -516,10 +525,13 @@ public:
 // ============================================================
 
 int main() {
+    TOTAL_EARNINGS = loadEarnings();
+
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "⚖️ MARDUK RIG v5.0 — COMPLETE OPTIMIZED" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
+    cout << "💰 Saved Earnings: " << TOTAL_EARNINGS.load() << " XMR" << endl;
     cout << "🧠 Egg Shorter: Active" << endl;
     cout << "⛏️ Sluice-Bench: Active" << endl;
     cout << "🔢 Ternary: Active" << endl;
@@ -527,7 +539,6 @@ int main() {
     cout << "⚙️ Cache Optimization: Active" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
-    // Display pattern databases
     SluiceBench sluice;
     sluice.displayDatabase("XMR");
     sluice.displayDatabase("BTC");
@@ -547,7 +558,6 @@ int main() {
         auto& pool = POOLS[choice - 1];
         cout << "\n⛏️ Mining " << pool.name << " ..." << endl;
 
-        // Connect to pool
         StratumClient stratum(WALLET, PASS, pool.host, pool.port, pool.name);
         if (!stratum.connectToPool()) {
             cout << "❌ Could not connect. Exiting." << endl;
@@ -555,12 +565,10 @@ int main() {
         }
         stratum.login();
 
-        // Determine threads
         unsigned int threads = thread::hardware_concurrency();
         if (threads == 0) threads = 2;
         cout << "💻 Using " << threads << " threads" << endl;
 
-        // Start mining threads
         vector<thread> workers;
         for (unsigned int i = 0; i < threads; ++i) {
             workers.push_back(thread([&pool, i]() {
@@ -569,7 +577,6 @@ int main() {
             }));
         }
 
-        // Monitor
         auto start = chrono::high_resolution_clock::now();
         while (MINING) {
             this_thread::sleep_for(chrono::seconds(10));
@@ -581,7 +588,6 @@ int main() {
             cout << "\n📊 " << hashrate << " H/s | Shares: " << TOTAL_SHARES.load() 
                  << " | Earned: " << TOTAL_EARNINGS.load() << " " << pool.symbol << endl;
             cout << "   Total Hashes: " << TOTAL_HASHES.load() << endl;
-            cout << "   Hashrate: " << hashrate << " H/s" << endl;
         }
 
         for (auto& w : workers) {
