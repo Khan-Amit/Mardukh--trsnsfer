@@ -678,29 +678,18 @@
         let transactionCounter = 0;
 
         function openATM(action) {
-            // Update the action tag
             const tag = document.getElementById('atmActionTag');
             const icons = { 'SEND': '💸', 'RECEIVE': '📥', 'PAY NOW': '💳' };
             tag.textContent = (icons[action] || '💳') + ' ' + action;
 
-            // Increment counter
             transactionCounter++;
             const counterStr = String(transactionCounter).padStart(3, '0');
             document.getElementById('atmCounter').textContent = 'X-SA-' + counterStr;
 
-            // Show the popup
             document.getElementById('atmOverlay').classList.add('active');
 
-            // Log the transaction
             addLog('🏦 ATM ' + action + ' opened | Counter: X-SA-' + counterStr, 'info');
             transferStatus.textContent = '🏦 ATM ' + action + ' - Counter: X-SA-' + counterStr;
-
-            // If SEND, also show the receiver and amount in the popup (optional)
-            const receiver = document.getElementById('receiverWallet').value.trim();
-            const amount = document.getElementById('sendAmount').value.trim();
-            if (action === 'SEND' && (receiver || amount)) {
-                // We could add extra info, but keeping it clean
-            }
         }
 
         function closeATM() {
@@ -709,7 +698,6 @@
             addLog('✅ ATM closed - Transaction confirmed', 'share');
         }
 
-        // Close ATM on ESC key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 const atm = document.getElementById('atmOverlay');
