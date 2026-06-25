@@ -1,5 +1,5 @@
 // ============================================================
-// MARDUK MINER v1.0 — 2011-2012 Style Bitcoin Miner
+// MARDUK MINER v2.0 — Mathematical Range Validation
 // ============================================================
 //
 // COMPILE: gcc -O3 -o miner miner.c -lpthread
@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <ctype.h>
 
 // ============================================================
 // CONFIGURATION
@@ -29,7 +30,6 @@
 #define PASS "x"
 
 #define MAX_THREADS 4
-#define MAX_CODES 1000000
 
 // ============================================================
 // GLOBALS
@@ -41,60 +41,122 @@ double total_earned = 0.0;
 int mining = 1;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-// ACHi code database (range: ACHi000000 to ACHi999999)
-char valid_prefixes[][10] = {"ACHi", "XMR", "BTC", "BLK", "TX", "HASH"};
-int num_prefixes = 6;
+// ============================================================
+// MATHEMATICAL VALIDATION — Like a formula
+// ============================================================
 
-// ============================================================
-// GATEKEEPER — Check if ACHi is valid
-// ============================================================
+/*
+ * RANGE: ACHi000000 to ACHi999999
+ * FORMULA: code must match /^ACHi[0-9]{6}$/
+ * 
+ * This covers 1,000,000 possible codes
+ * Without storing any of them
+ */
 
 int is_valid_achi(const char* code) {
     int len = strlen(code);
     
-    // Must be at least 6 chars
-    if (len < 6) return 0;
+    // Must be exactly 10 chars for ACHi + 6 digits
+    if (len != 10) return 0;
     
-    // Check prefix
-    int valid = 0;
-    for (int i = 0; i < num_prefixes; i++) {
-        if (strncmp(code, valid_prefixes[i], strlen(valid_prefixes[i])) == 0) {
-            valid = 1;
-            break;
-        }
-    }
-    if (!valid) return 0;
+    // Check prefix "ACHi"
+    if (strncmp(code, "ACHi", 4) != 0) return 0;
     
-    // Check characters (only alnum)
-    for (int i = 0; i < len; i++) {
-        if (!((code[i] >= 'A' && code[i] <= 'Z') ||
-              (code[i] >= 'a' && code[i] <= 'z') ||
-              (code[i] >= '0' && code[i] <= '9'))) {
-            return 0;
-        }
+    // Check remaining 6 characters are digits
+    for (int i = 4; i < 10; i++) {
+        if (!isdigit(code[i])) return 0;
     }
     
-    // If ACHi prefix, check numeric range 000000-999999
-    if (strncmp(code, "ACHi", 4) == 0 && len >= 10) {
-        char num_part[20];
-        strcpy(num_part, code + 4);
-        int num = atoi(num_part);
-        if (num >= 0 && num <= 999999) {
-            return 1;
-        }
-        return 0;
-    }
+    // All checks passed
+    return 1;
+}
+
+/*
+ * EXTENDED RANGE: Also accept XMR, BTC prefixes
+ * FORMULA: /^(XMR|BTC)[0-9]{6}$/
+ */
+
+int is_valid_extended(const char* code) {
+    int len = strlen(code);
     
-    // Other prefixes: accept if length 6-20
-    if (len >= 6 && len <= 20) {
+    // Must be exactly 9 chars for XMR/BTC + 6 digits
+    if (len != 9) return 0;
+    
+    // Check prefix XMR or BTC
+    if (strncmp(code, "XMR", 3) == 0 || strncmp(code, "BTC", 3) == 0) {
+        // Check remaining 6 characters are digits
+        for (int i = 3; i < 9; i++) {
+            if (!isdigit(code[i])) return 0;
+        }
         return 1;
     }
     
     return 0;
 }
 
+/*
+ * WILDCARD PATTERN: Like x$$$$$$$$$$z
+ * Any code matching the pattern is valid
+ */
+
+int matches_pattern(const char* code, const char* pattern) {
+    int len = strlen(code);
+    int pat_len = strlen(pattern);
+    
+    if (len != pat_len) return 0;
+    
+    for (int i = 0; i < len; i++) {
+        if (pattern[i] == '$') {
+            // $ means any digit (0-9)
+            if (!isdigit(code[i])) return 0;
+        } else if (pattern[i] == '#') {
+            // # means any alphanumeric
+            if (!isalnum(code[i])) return 0;
+        } else if (pattern[i] == '*') {
+            // * means any character
+            continue;
+        } else {
+            // Exact match required
+            if (code[i] != pattern[i]) return 0;
+        }
+    }
+    return 1;
+}
+
 // ============================================================
-// EGG SHORTER — Convert to binary
+// GATEKEEPER — Full validation
+// ============================================================
+
+int gatekeeper(const char* code) {
+    // 1. Check exact range: ACHi000000 to ACHi999999
+    if (is_valid_achi(code)) return 1;
+    
+    // 2. Check extended: XMR000000 to XMR999999, BTC000000 to BTC999999
+    if (is_valid_extended(code)) return 1;
+    
+    // 3. Check wildcard patterns
+    // Pattern: ACHi$$$$$$ (where $ = any digit)
+    if (matches_pattern(code, "ACHi$$$$$$")) return 1;
+    
+    // Pattern: XMR$$$$$$ (where $ = any digit)
+    if (matches_pattern(code, "XMR$$$$$$")) return 1;
+    
+    // Pattern: BTC$$$$$$ (where $ = any digit)
+    if (matches_pattern(code, "BTC$$$$$$")) return 1;
+    
+    // 4. Check if code contains only valid characters
+    for (int i = 0; code[i] != '\0'; i++) {
+        if (!isalnum(code[i]) && code[i] != '_') return 0;
+    }
+    
+    // 5. Minimum length check
+    if (strlen(code) < 4) return 0;
+    
+    return 0;
+}
+
+// ============================================================
+// EGG SHORTER
 // ============================================================
 
 void to_binary(const char* input, char* output) {
@@ -125,7 +187,7 @@ void shorten_binary(const char* binary, char* output) {
 }
 
 // ============================================================
-// SLUICE-BENCH — Match crypto patterns
+// SLUICE-BENCH
 // ============================================================
 
 int is_xmr(const char* binary) {
@@ -145,7 +207,7 @@ int is_btc(const char* binary) {
 }
 
 // ============================================================
-// STRATUM — Connect and submit
+// STRATUM
 // ============================================================
 
 int connect_pool() {
@@ -206,8 +268,8 @@ void process_achi(const char* code, int sock) {
     
     printf("\n📥 #%d: %s\n", num, code);
     
-    // Gatekeeper check
-    if (!is_valid_achi(code)) {
+    // GATEKEEPER: Mathematical validation
+    if (!gatekeeper(code)) {
         printf("🚫 REJECTED: Not in range\n");
         pthread_mutex_lock(&lock);
         total_rejected++;
@@ -220,13 +282,13 @@ void process_achi(const char* code, int sock) {
     total_accepted++;
     pthread_mutex_unlock(&lock);
     
-    // Egg Shorter
+    // EGG SHORTER
     char binary[1024];
     char shortened[512];
     to_binary(code, binary);
     shorten_binary(binary, shortened);
     
-    // Sluice-Bench
+    // SLUICE-BENCH
     int xmr = is_xmr(shortened);
     int btc = is_btc(shortened);
     
@@ -251,7 +313,22 @@ void process_achi(const char* code, int sock) {
 }
 
 // ============================================================
-// WORKER THREAD — Processes codes from queue
+// GENERATE CODES BY FORMULA
+// ============================================================
+
+void generate_codes_by_formula(char* output, int count) {
+    // Generate ACHi000000 to ACHi999999 using math
+    // Not storing them, generating on the fly
+    static int counter = 0;
+    
+    if (counter > 999999) counter = 0;
+    
+    snprintf(output, 20, "ACHi%06d", counter);
+    counter++;
+}
+
+// ============================================================
+// WORKER THREAD
 // ============================================================
 
 void* worker_thread(void* arg) {
@@ -275,13 +352,16 @@ void* worker_thread(void* arg) {
 
 int main(int argc, char* argv[]) {
     printf("\n════════════════════════════════════════════════════\n");
-    printf("⚖️ MARDUK MINER v1.0 — 2011-2012 Style\n");
+    printf("⚖️ MARDUK MINER v2.0 — Mathematical Range\n");
     printf("════════════════════════════════════════════════════\n");
     printf("📤 Wallet: %.20s...\n", WALLET);
     printf("🌊 Pool: %s:%d\n", POOL_HOST, POOL_PORT);
     printf("────────────────────────────────────────────────────\n");
-    printf("🚪 Range: ACHi000000 to ACHi999999\n");
-    printf("   Prefixes: ACHi, XMR, BTC, BLK, TX, HASH\n");
+    printf("📐 Mathematical Validation:\n");
+    printf("   Range 1: ACHi000000 to ACHi999999 (1M codes)\n");
+    printf("   Range 2: XMR000000 to XMR999999 (1M codes)\n");
+    printf("   Range 3: BTC000000 to BTC999999 (1M codes)\n");
+    printf("   Pattern: ACHi$$$$$$ (where $ = any digit)\n");
     printf("────────────────────────────────────────────────────\n");
     
     // Connect to pool
@@ -294,23 +374,20 @@ int main(int argc, char* argv[]) {
     }
     printf("────────────────────────────────────────────────────\n");
     
-    // Test codes
-    char* test_codes[] = {
-        "ACHi000000", "ACHi000001", "ACHi000002", "ACHi000003", "ACHi000004",
-        "ACHi999999", "XMR123456", "BTC654321", "INVALID", "BOGUS",
-        "ACHi1000000", "ACHiXXXXX", NULL
-    };
-    
-    printf("📋 Running test codes:\n");
+    // Generate and test 20 codes using formula
+    printf("📋 Generating 20 codes by formula:\n");
     printf("────────────────────────────────────────────────────\n");
     
-    for (int i = 0; test_codes[i] != NULL; i++) {
-        process_achi(test_codes[i], sock);
+    for (int i = 0; i < 20; i++) {
+        char code[20];
+        generate_codes_by_formula(code, i);
+        process_achi(code, sock);
         usleep(50000);
     }
     
     printf("\n────────────────────────────────────────────────────\n");
-    printf("💡 Type ACHi codes or Ctrl+D to stop:\n");
+    printf("💡 Type any ACHi code or Ctrl+D to stop:\n");
+    printf("   (e.g., ACHi123456, XMR999999, BTC000001)\n");
     printf("────────────────────────────────────────────────────\n");
     
     // Create worker threads
