@@ -1,674 +1,502 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marduk · Real Rig</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #0a0e1a;
-            color: #88ffaa;
-            font-family: 'Courier New', monospace;
-            padding: 1.5rem;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            max-width: 1300px;
-            width: 100%;
-            background: #0f1322;
-            border-radius: 2rem;
-            border: 2px solid #ffcc00;
-            padding: 2rem;
-            box-shadow: 0 8px 48px rgba(0,0,0,0.8);
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #ffcc00;
-        }
-        .header .title { color: #ffcc00; font-size: 1.5rem; font-weight: bold; }
-        .header .sub { color: #8da0c0; font-size: 0.8rem; }
-        .header .time { color: #8da0c0; font-size: 0.8rem; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marduk · Rig + ATM</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    background: #0a0e1a; color: #88ffaa;
+    font-family: 'Courier New', monospace;
+    padding: 1.5rem; min-height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+}
+.container {
+    max-width: 1300px; width: 100%;
+    background: #0f1322; border-radius: 2rem;
+    border: 2px solid #ffcc00; padding: 2rem;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.8);
+}
+.header {
+    display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    margin-bottom: 1.5rem; padding-bottom: 1rem;
+    border-bottom: 2px solid #ffcc00;
+}
+.header .title { color: #ffcc00; font-size: 1.5rem; font-weight: bold; }
+.header .sub { color: #8da0c0; font-size: 0.8rem; }
+.header .time { color: #8da0c0; font-size: 0.8rem; }
 
-        .wallet-box {
-            background: #010410;
-            border-radius: 0.8rem;
-            padding: 0.8rem 1rem;
-            border: 1px solid #1a2a4a;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-        .wallet-box .wallet-label { color: #ffcc00; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
-        .wallet-box .wallet-address {
-            color: #88ffaa;
-            font-size: 0.7rem;
-            word-break: break-all;
-            margin: 0.3rem 0;
-        }
-        .wallet-box .wallet-address a { color: #66ccff; text-decoration: none; }
-        .wallet-box .wallet-address a:hover { color: #ffcc00; text-decoration: underline; }
-        .wallet-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .wallet-actions .btn-small {
-            background: #0a0e1a;
-            border: 1px solid #1a2a4a;
-            color: #88ffaa;
-            padding: 0.2rem 0.8rem;
-            border-radius: 1rem;
-            font-family: monospace;
-            font-size: 0.6rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .wallet-actions .btn-small:hover { border-color: #ffcc00; color: #ffcc00; }
+.wallet-box {
+    background: #010410; border-radius: 0.8rem;
+    padding: 0.8rem 1rem; border: 1px solid #1a2a4a;
+    margin-bottom: 1.5rem; line-height: 1.6;
+}
+.wallet-box .wallet-label { color: #ffcc00; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
+.wallet-box .wallet-address { color: #88ffaa; font-size: 0.7rem; word-break: break-all; margin: 0.3rem 0; }
+.wallet-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.wallet-actions .btn-small {
+    background: #0a0e1a; border: 1px solid #1a2a4a;
+    color: #88ffaa; padding: 0.2rem 0.8rem;
+    border-radius: 1rem; font-family: monospace; font-size: 0.6rem;
+    cursor: pointer; transition: 0.2s;
+}
+.wallet-actions .btn-small:hover { border-color: #ffcc00; color: #ffcc00; }
 
-        .balance-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.8rem;
-            margin-bottom: 1.5rem;
-        }
-        @media (max-width: 700px) { .balance-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 450px) { .balance-grid { grid-template-columns: 1fr; } }
-        .balance-item {
-            background: #010410;
-            border-radius: 0.8rem;
-            padding: 0.8rem 0.5rem;
-            border: 1px solid #1a2a4a;
-            text-align: center;
-        }
-        .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .balance-item .value { color: #88ffaa; font-size: 1rem; font-weight: bold; margin-top: 0.2rem; }
-        .balance-item .value.xmr { color: #ff6633; }
-        .balance-item .value.btc { color: #f7931a; }
-        .balance-item .value.bch { color: #8dc351; }
-        .balance-item .value.usdt { color: #26a17b; }
-        .balance-item .value.doge { color: #c2a633; }
-        .balance-item .value.ltc { color: #a5a5a5; }
-        .balance-item .value.eth { color: #627eea; }
-        .balance-item .value.thb { color: #88ff88; }
+.balance-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem; margin-bottom: 1.5rem;
+}
+@media (max-width:700px) { .balance-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width:450px) { .balance-grid { grid-template-columns: 1fr; } }
+.balance-item {
+    background: #010410; border-radius: 0.8rem;
+    padding: 0.8rem 0.5rem; border: 1px solid #1a2a4a;
+    text-align: center;
+}
+.balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.balance-item .value { color: #88ffaa; font-size: 1rem; font-weight: bold; margin-top: 0.2rem; }
+.balance-item .value.xmr { color: #ff6633; }
 
-        .pool-select {
-            background: #010410;
-            border: 1px solid #1a2a4a;
-            border-radius: 2rem;
-            padding: 0.6rem 1.2rem;
-            font-family: monospace;
-            font-size: 0.75rem;
-            color: #88ffaa;
-            width: 100%;
-            outline: none;
-            margin-bottom: 0.5rem;
-        }
-        .pool-select:focus { border-color: #ffcc00; }
-        .pool-select optgroup { color: #ffcc00; font-style: normal; }
-        .pool-select option { color: #88ffaa; }
+.pool-select {
+    background: #010410; border: 1px solid #1a2a4a;
+    border-radius: 2rem; padding: 0.6rem 1.2rem;
+    font-family: monospace; font-size: 0.75rem; color: #88ffaa;
+    width: 100%; outline: none; margin-bottom: 0.5rem;
+}
+.pool-select:focus { border-color: #ffcc00; }
 
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.8rem;
-        }
-        .btn {
-            background: #0a0e1a;
-            color: #88ffaa;
-            border: 1px solid #1a2a4a;
-            padding: 0.6rem 1.2rem;
-            border-radius: 2rem;
-            font-family: monospace;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: 0.2s;
-            flex: 1;
-            min-width: 70px;
-            text-align: center;
-        }
-        .btn:hover { transform: scale(0.96); opacity: 0.8; }
-        .btn.primary { border-color: #ffcc00; color: #ffcc00; }
-        .btn.success { border-color: #2a6a3a; color: #88ff88; }
-        .btn.gold { border-color: #ffcc00; color: #ffcc00; }
-        .btn.danger { border-color: #8a2a2a; color: #ff6666; }
+.btn-group {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0;
+}
+.btn {
+    background: #0a0e1a; color: #88ffaa;
+    border: 1px solid #1a2a4a; padding: 0.6rem 1.2rem;
+    border-radius: 2rem; font-family: monospace; font-size: 0.75rem;
+    cursor: pointer; transition: 0.2s;
+    flex: 1; min-width: 70px; text-align: center;
+}
+.btn:hover { transform: scale(0.96); opacity: 0.8; }
+.btn.success { border-color: #2a6a3a; color: #88ff88; }
+.btn.danger { border-color: #8a2a2a; color: #ff6666; }
+.btn.primary { border-color: #ffcc00; color: #ffcc00; }
+.btn.gold { border-color: #ffcc00; color: #ffcc00; }
 
-        .transfer-section {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #1a2a4a;
-        }
-        .transfer-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .transfer-row input {
-            flex: 1;
-            min-width: 100px;
-            background: #010410;
-            border: 1px solid #1a2a4a;
-            border-radius: 2rem;
-            padding: 0.5rem 1rem;
-            font-family: monospace;
-            font-size: 0.75rem;
-            color: #88ffaa;
-            outline: none;
-        }
-        .transfer-row input::placeholder { color: #4a5a6a; }
-        .transfer-row input:focus { border-color: #ffcc00; }
+.transfer-section {
+    margin-top: 1rem; padding-top: 1rem;
+    border-top: 1px solid #1a2a4a;
+}
+.transfer-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;
+}
+.transfer-row input {
+    flex: 1; min-width: 100px;
+    background: #010410; border: 1px solid #1a2a4a;
+    border-radius: 2rem; padding: 0.5rem 1rem;
+    font-family: monospace; font-size: 0.75rem; color: #88ffaa;
+    outline: none;
+}
+.transfer-row input::placeholder { color: #4a5a6a; }
+.transfer-row input:focus { border-color: #ffcc00; }
 
-        .qr-area {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            padding: 0.5rem 0.8rem;
-            background: #010410;
-            border-radius: 2rem;
-            border: 1px dashed #1a2a4a;
-            margin-top: 0.5rem;
-            font-size: 0.7rem;
-            color: #4a5a6a;
-            flex-wrap: wrap;
-        }
-        .qr-area .qr-icon { font-size: 1.2rem; }
-        .qr-area .qr-hint { color: #8da0c0; word-break: break-all; font-size: 0.7rem; flex: 1; }
-        .transfer-status {
-            margin-top: 0.5rem;
-            font-size: 0.65rem;
-            color: #4a5a6a;
-        }
+.qr-area {
+    display: flex; align-items: center; gap: 0.8rem;
+    padding: 0.5rem 0.8rem; background: #010410;
+    border-radius: 2rem; border: 1px dashed #1a2a4a;
+    margin-top: 0.5rem; font-size: 0.7rem; color: #4a5a6a;
+    flex-wrap: wrap;
+}
+.qr-area .qr-icon { font-size: 1.2rem; }
+.qr-area .qr-hint { color: #8da0c0; word-break: break-all; font-size: 0.7rem; flex: 1; }
+.transfer-status {
+    margin-top: 0.5rem; font-size: 0.65rem; color: #4a5a6a;
+}
 
-        .rig-log {
-            background: #010410;
-            border-radius: 0.8rem;
-            padding: 0.8rem 1rem;
-            min-height: 220px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-size: 0.7rem;
-            color: #8da0c0;
-            border: 1px solid #1a2a4a;
-            margin-top: 0.5rem;
-            line-height: 1.6;
-        }
-        .rig-log .share { color: #88ff88; }
-        .rig-log .hash { color: #ffcc00; }
-        .rig-log .real { color: #66ccff; }
-        .rig-log .error { color: #ff6666; }
+.counter-section {
+    background: #010410; border-radius: 0.8rem;
+    padding: 1.5rem; border: 1px solid #1a2a4a;
+    text-align: center; margin-top: 1rem;
+}
+.counter-section .counter-number {
+    font-size: 4rem; font-weight: bold; color: #ffcc00;
+    text-shadow: 0 0 30px rgba(255,204,0,0.2);
+    padding: 0.5rem 0;
+}
+.stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem; margin: 0.5rem 0;
+}
+.stat {
+    background: #0a0e1a; padding: 0.5rem; border-radius: 0.5rem;
+    border: 1px solid #1a2a4a; text-align: center;
+}
+.stat .label { color: #8da0c0; font-size: 0.5rem; text-transform: uppercase; }
+.stat .value { color: #ffcc00; font-size: 1.2rem; font-weight: bold; }
+@media (max-width:700px) { .stats { grid-template-columns: repeat(2,1fr); } }
 
-        .rig-status-bar {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.7rem;
-            color: #8da0c0;
-            margin-bottom: 0.3rem;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-        }
-        .rig-status-bar .active { color: #88ff88; }
-        .rig-status-bar .stopped { color: #ff6666; }
+.rig-log {
+    background: #010410; border-radius: 0.8rem;
+    padding: 0.8rem 1rem; min-height: 250px; max-height: 350px;
+    overflow-y: auto; font-size: 0.7rem; color: #8da0c0;
+    border: 1px solid #1a2a4a; margin-top: 0.5rem;
+    line-height: 1.8; white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+}
+.rig-log .accepted { color: #88ff88; }
+.rig-log .rejected { color: #ff6666; }
+.rig-log .info { color: #66ccff; }
+.rig-log .send { color: #ffcc00; }
 
-        .accumulated {
-            margin-top: 0.6rem;
-            font-size: 0.7rem;
-            color: #8da0c0;
-        }
-        .accumulated span { color: #ffcc00; font-weight: bold; }
+.footer {
+    text-align: center; margin-top: 1.5rem;
+    padding-top: 1rem; border-top: 1px solid #1a2a4a;
+    font-size: 0.6rem; color: #4a5a6a;
+}
 
-        .footer {
-            text-align: center;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #1a2a4a;
-            font-size: 0.6rem;
-            color: #4a5a6a;
-        }
-        .rig-log::-webkit-scrollbar { width: 4px; }
-        .rig-log::-webkit-scrollbar-track { background: #010410; }
-        .rig-log::-webkit-scrollbar-thumb { background: #ffcc00; border-radius: 4px; }
+/* Password Overlay */
+.password-overlay {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.95); display: flex;
+    justify-content: center; align-items: center; z-index: 9999;
+}
+.password-overlay.hidden { display: none; }
+.password-box {
+    background: #0f1322; border: 2px solid #ffcc00;
+    border-radius: 2rem; padding: 3rem; max-width: 400px;
+    width: 90%; text-align: center;
+}
+.password-box h2 { color: #ffcc00; margin-bottom: 1rem; }
+.password-box p { color: #8da0c0; margin-bottom: 1rem; }
+.password-box input {
+    background: #010410; border: 1px solid #2a3a60;
+    color: white; padding: 12px 20px; border-radius: 2rem;
+    width: 100%; font-size: 1.2rem; text-align: center;
+    margin: 1rem 0; font-family: monospace; letter-spacing: 4px;
+}
+.password-box input:focus { outline: none; border-color: #ffcc00; }
+.password-box .error { color: #ff6666; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
+.password-box .error.show { display: block; }
+.password-box button {
+    background: #2a4a7a; color: white; border: none;
+    padding: 0.8rem; border-radius: 2rem; width: 100%;
+    font-size: 1rem; cursor: pointer; font-family: monospace;
+}
+.password-box button:hover { opacity: 0.8; }
+.password-box .hint { color: #4a5a6a; font-size:0.7rem; margin-top:0.5rem; }
 
-        @media (max-width: 500px) {
-            .container { padding: 1rem; }
-            .btn { min-width: 60px; font-size: 0.65rem; padding: 0.4rem 0.8rem; }
-            .transfer-row input { min-width: 70px; font-size: 0.65rem; }
-            .rig-log { min-height: 150px; max-height: 200px; }
-        }
-
-        .password-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .password-box {
-            background: #0f1322;
-            border: 2px solid #ffcc00;
-            border-radius: 2rem;
-            padding: 3rem;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-        }
-        .password-box h2 { color: #ffcc00; margin-bottom: 1rem; }
-        .password-box input {
-            background: #010410;
-            border: 1px solid #2a3a60;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 2rem;
-            width: 100%;
-            font-size: 1.2rem;
-            text-align: center;
-            margin: 1rem 0;
-            font-family: monospace;
-            letter-spacing: 4px;
-        }
-        .password-box input:focus { outline: none; border-color: #ffcc00; }
-        .password-box .error { color: #ff6666; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
-        .password-box .error.show { display: block; }
-        .password-box .hint { color: #8da0c0; font-size: 0.7rem; margin-top: 0.5rem; }
-        .password-box button {
-            background: #2a4a7a;
-            color: white;
-            border: none;
-            padding: 0.8rem;
-            border-radius: 2rem;
-            width: 100%;
-            font-size: 1rem;
-            cursor: pointer;
-            font-family: monospace;
-        }
-        .password-box button:hover { opacity: 0.8; }
-    </style>
+/* ATM Popup */
+.atm-overlay {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.85); display: none;
+    justify-content: center; align-items: center; z-index: 10000;
+    backdrop-filter: blur(4px);
+}
+.atm-overlay.active { display: flex; }
+.atm-box {
+    background: #0f1322; border: 2px solid #ffcc00;
+    border-radius: 2rem; padding: 2.5rem; max-width: 480px;
+    width: 92%; box-shadow: 0 0 60px rgba(255,204,0,0.15);
+    text-align: center; animation: atmPop 0.3s ease-out;
+}
+@keyframes atmPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.atm-box .atm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+.atm-box h2 { color: #ffcc00; font-size: 1.6rem; letter-spacing: 2px; border-bottom: 1px solid #2a3a60; padding-bottom: 0.8rem; margin-bottom: 1.2rem; }
+.atm-detail { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #1a2a4a; font-size: 0.85rem; }
+.atm-detail .label { color: #8da0c0; }
+.atm-detail .value { color: #88ffaa; font-weight: bold; }
+.atm-detail .value.highlight { color: #ffcc00; }
+.atm-detail .value.txid { color: #ffaa66; }
+.atm-counter { margin: 1.2rem 0; padding: 0.8rem; background: #010410; border-radius: 1rem; border: 1px solid #1a2a4a; }
+.atm-counter .count-label { color: #8da0c0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+.atm-counter .count-number { font-size: 2.8rem; font-weight: bold; color: #ffcc00; }
+.atm-close-btn { margin-top: 1.2rem; background: #2a4a7a; color: white; border: none; padding: 0.8rem 2rem; border-radius: 2rem; font-size: 1rem; cursor: pointer; }
+.atm-close-btn:hover { background: #3a5a8a; transform: scale(0.96); }
+.atm-action-tag { display: inline-block; background: #2a6a3a; color: #88ff88; padding: 0.2rem 1rem; border-radius: 1rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; }
+.atm-box .sub-text { color: #4a5a6a; font-size: 0.6rem; margin-top: 0.8rem; }
+</style>
 </head>
 <body>
 
-    <!-- PASSWORD OVERLAY -->
-    <div class="password-overlay" id="passwordOverlay">
-        <div class="password-box">
-            <h2>🔐 MARDUK ATM</h2>
-            <p style="color:#8da0c0;">Enter PIN to unlock</p>
-            <input type="password" id="pinInput" maxlength="6" placeholder="••••••" autofocus>
-            <button id="unlockBtn">🔓 UNLOCK</button>
-            <div class="error" id="pinError">❌ Invalid PIN</div>
-            <div class="hint">Hint: 197328</div>
+<!-- PASSWORD OVERLAY -->
+<div class="password-overlay" id="passwordOverlay">
+    <div class="password-box">
+        <h2>🔐 MARDUK ATM</h2>
+        <p style="color:#8da0c0;">Enter PIN to unlock</p>
+        <input type="password" id="pinInput" maxlength="6" placeholder="••••••" autofocus>
+        <button id="unlockBtn">🔓 UNLOCK</button>
+        <div class="error" id="pinError">❌ Invalid PIN</div>
+        <div class="hint">Hint: 197328</div>
+    </div>
+</div>
+
+<!-- ATM POPUP -->
+<div class="atm-overlay" id="atmOverlay">
+    <div class="atm-box">
+        <div class="atm-icon">🏦</div>
+        <div class="atm-action-tag" id="atmActionTag">💸 SEND</div>
+        <h2>MARDUK ATM</h2>
+        <div class="atm-detail"><span class="label">👤 Account Holder</span><span class="value highlight">Seliim Ahmed</span></div>
+        <div class="atm-detail"><span class="label">🔢 Account Number</span><span class="value">200-4-25879-0</span></div>
+        <div class="atm-detail"><span class="label">💳 Card Number</span><span class="value">5598 8820 2345 3325</span></div>
+        <div class="atm-detail"><span class="label">💱 Transaction ID</span><span class="value txid" id="atmTxId">X-SA-001</span></div>
+        <button class="atm-close-btn" onclick="closeATM()">✅ CONFIRM & CLOSE</button>
+        <div class="sub-text">© 2026 Seliim Ahmed · All Rights Reserved</div>
+    </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="container" id="mainApp" style="display:none;">
+    <div class="header">
+        <div>
+            <span class="title">⚖️ MARDUK · SECURE RIG</span>
+            <span class="sub" id="connectionStatus">🔴 Rig Offline</span>
+        </div>
+        <div class="time" id="headerTime">--:--:--</div>
+    </div>
+
+    <div class="wallet-box">
+        <div class="wallet-label">📬 Your Monero Wallet</div>
+        <div class="wallet-address">
+            45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
+        </div>
+        <div class="wallet-actions">
+            <button class="btn-small" onclick="copyWallet()">📋 COPY</button>
+            <button class="btn-small" onclick="window.open('https://xmrchain.net/address/45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb','_blank')">🔗 VIEW</button>
         </div>
     </div>
 
-    <!-- MAIN ATM -->
-    <div class="container" id="mainApp" style="display:none;">
-        <!-- HEADER -->
-        <div class="header">
-            <div>
-                <span class="title">⚖️ MARDUK · REAL RIG</span>
-                <span class="sub">Live Data from Miner</span>
-            </div>
-            <div class="time" id="headerTime">--:--:--</div>
-        </div>
+    <div class="balance-grid">
+        <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
+        <div class="balance-item"><div class="label">📊 Shares</div><div class="value" id="shareDisplay">0</div></div>
+        <div class="balance-item"><div class="label">✅ Accepted</div><div class="value" id="acceptedDisplay" style="color:#88ff88;">0</div></div>
+        <div class="balance-item"><div class="label">🚫 Rejected</div><div class="value" id="rejectedDisplay" style="color:#ff6666;">0</div></div>
+    </div>
 
-        <!-- WALLET -->
-        <div class="wallet-box">
-            <div class="wallet-label">📬 Wallet Address</div>
-            <div class="wallet-address">
-                <a href="https://xmrchain.net/address/45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb" target="_blank">
-                    45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
-                </a>
-            </div>
-            <div class="wallet-actions">
-                <button class="btn-small" onclick="copyWallet()">📋 COPY</button>
-                <button class="btn-small" onclick="window.open('https://xmrchain.net/address/45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb','_blank')">🔗 VIEW</button>
-            </div>
-        </div>
+    <div style="margin-bottom:1rem;">
+        <label style="font-size:0.65rem;color:#4a5a6a;">⛏️ Select Mining Pool</label>
+        <select class="pool-select" id="poolSelect">
+            <optgroup label="🟠 MONERO (XMR)">
+                <option value="xmr_kryptex">Kryptex (UAE) · xmr-ae.kryptex.network:7029</option>
+                <option value="xmr_support" selected>SupportXMR (EU) · pool.supportxmr.com:3333</option>
+            </optgroup>
+            <optgroup label="₿ BITCOIN (BTC)">
+                <option value="btc_viabtc1">ViaBTC · btc.viabtc.top:3333</option>
+                <option value="btc_viabtc2">ViaBTC · btc.viabtc.top:25</option>
+                <option value="btc_viabtc3">ViaBTC · btc.viabtc.top:443</option>
+                <option value="btc_ant1">AntPool · antpool.com:3333</option>
+                <option value="btc_ant2">AntPool · antpool.com:25</option>
+                <option value="btc_ant3">AntPool · antpool.com:443</option>
+                <option value="btc_f2pool1">F2Pool · f2pool.com:3333</option>
+                <option value="btc_f2pool2">F2Pool · f2pool.com:25</option>
+                <option value="btc_f2pool3">F2Pool · f2pool.com:443</option>
+                <option value="btc_binance1">Binance Pool · poolbinance.com:3333</option>
+                <option value="btc_binance2">Binance Pool · poolbinance.com:25</option>
+                <option value="btc_kryptex">Kryptex BTC · btc.kryptex.network:77</option>
+            </optgroup>
+        </select>
+    </div>
 
-        <!-- BALANCES -->
-        <div class="balance-grid" id="balanceContainer">
-            <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
-            <div class="balance-item"><div class="label">₿ Bitcoin (BTC)</div><div class="value btc" id="btcBal">0.00000000</div></div>
-            <div class="balance-item"><div class="label">💎 Bitcoin Cash (BCH)</div><div class="value bch" id="bchBal">0.00000000</div></div>
-            <div class="balance-item"><div class="label">💰 Tether (USDT)</div><div class="value usdt" id="usdtBal">0.00</div></div>
-            <div class="balance-item"><div class="label">🐕 Dogecoin (DOGE)</div><div class="value doge" id="dogeBal">0.00000000</div></div>
-            <div class="balance-item"><div class="label">⚡ Litecoin (LTC)</div><div class="value ltc" id="ltcBal">0.00000000</div></div>
-            <div class="balance-item"><div class="label">⟠ Ethereum (ETH)</div><div class="value eth" id="ethBal">0.00000000</div></div>
-            <div class="balance-item"><div class="label">🇹🇭 THB Value</div><div class="value thb" id="thbVal">฿ 0.00</div></div>
+    <div class="transfer-section">
+        <h2 style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">💸 SEND / RECEIVE / PAY</h2>
+        <div class="transfer-row">
+            <input type="text" id="receiverWallet" placeholder="Receiver Wallet Address" />
+            <input type="text" id="sendAmount" placeholder="Amount (XMR)" />
         </div>
-
-        <!-- POOL SELECTOR -->
-        <div style="margin-bottom:1rem;">
-            <label style="font-size:0.65rem;color:#4a5a6a;">⛏️ Select Mining Pool</label>
-            <select class="pool-select" id="poolSelect">
-                <optgroup label="🟠 MONERO (XMR)">
-                    <option value="xmr_uae">Kryptex (UAE) · xmr-ae.kryptex.network:7029</option>
-                    <option value="xmr_eu">SupportXMR (EU) · pool.supportxmr.com:3333</option>
-                </optgroup>
-                <optgroup label="₿ BITCOIN (BTC)">
-                    <option value="btc_viabtc1">ViaBTC · btc.viabtc.top:3333</option>
-                    <option value="btc_viabtc2">ViaBTC · btc.viabtc.top:25</option>
-                    <option value="btc_viabtc3">ViaBTC · btc.viabtc.top:443</option>
-                    <option value="btc_ant1">AntPool · antpool.com:3333</option>
-                    <option value="btc_ant2">AntPool · antpool.com:25</option>
-                    <option value="btc_ant3">AntPool · antpool.com:443</option>
-                    <option value="btc_f2pool1">F2Pool · f2pool.com:3333</option>
-                    <option value="btc_f2pool2">F2Pool · f2pool.com:25</option>
-                    <option value="btc_f2pool3">F2Pool · f2pool.com:443</option>
-                    <option value="btc_binance1">Binance Pool · poolbinance.com:3333</option>
-                    <option value="btc_binance2">Binance Pool · poolbinance.com:25</option>
-                    <option value="btc_kryptex">Kryptex BTC · btc.kryptex.network:77</option>
-                </optgroup>
-            </select>
-        </div>
-
-        <!-- TRANSFER -->
-        <div class="transfer-section">
-            <h2 style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">💸 SEND / RECEIVE / PAY</h2>
-            <div class="transfer-row">
-                <input type="text" id="receiverWallet" placeholder="Receiver Wallet Address" />
-                <input type="text" id="sendAmount" placeholder="Amount (XMR)" />
-            </div>
-            <div class="btn-group">
-                <button class="btn success" onclick="sendPayment()">💸 SEND</button>
-                <button class="btn primary" onclick="receivePayment()">📥 RECEIVE</button>
-                <button class="btn gold" onclick="payNow()">💳 PAY NOW</button>
-            </div>
-            <div class="qr-area" id="qrArea">
-                <span class="qr-icon">📱</span>
-                <span class="qr-hint">Scan QR to pay · Click "RECEIVE" to generate</span>
-            </div>
-            <div class="transfer-status" id="transferStatus">⏳ Ready</div>
-        </div>
-
-        <!-- BUTTONS -->
         <div class="btn-group">
-            <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
-            <button class="btn success" onclick="copyWallet()">📋 COPY</button>
-            <button class="btn gold" id="startRigBtn">▶ START RIG</button>
-            <button class="btn danger" id="stopRigBtn" style="display:none;">⏹ STOP RIG</button>
+            <button class="btn success" onclick="openATM('SEND')">💸 SEND</button>
+            <button class="btn primary" onclick="openATM('RECEIVE')">📥 RECEIVE</button>
+            <button class="btn gold" onclick="openATM('PAY NOW')">💳 PAY NOW</button>
         </div>
-
-        <!-- RIG ACTIVITY -->
-        <div style="margin-top:1.5rem;background:#010410;border-radius:0.8rem;padding:1rem;border:1px solid #1a2a4a;">
-            <div class="rig-status-bar">
-                <span id="rigStatus" style="color:#ff6666;">⏹️ Disconnected</span>
-                <span id="rigShares">Shares: 0</span>
-                <span id="rigHash">0.0 H/s</span>
-                <span id="rigPool">Pool: —</span>
-            </div>
-            <div class="rig-log" id="rigLog">
-                <div>⚖️ Marduk Real Rig</div>
-                <div>⏳ Waiting for data from miner...</div>
-            </div>
-            <div class="accumulated">
-                Earned: <span id="accumulated">0.00000000 XMR</span>
-            </div>
+        <div class="qr-area">
+            <span class="qr-icon">📱</span>
+            <span class="qr-hint">Scan QR to pay · Click "RECEIVE" to generate</span>
         </div>
+        <div class="transfer-status" id="transferStatus">⏳ Ready</div>
+    </div>
 
-        <div class="footer">
-            © 2026 Seliim Ahmed · All Rights Reserved · <span id="footerTime">--:--:--</span>
+    <div class="btn-group">
+        <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
+        <button class="btn success" onclick="copyWallet()">📋 COPY</button>
+    </div>
+
+    <div class="counter-section">
+        <div style="color:#8da0c0;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;">🔄 X-SA COUNTER</div>
+        <div class="counter-number" id="xsaDisplay">X-SA-000</div>
+        <div class="stats">
+            <div class="stat"><div class="label">📦 Packets</div><div class="value" id="packetCount">0</div></div>
+            <div class="stat"><div class="label">📤 Sent</div><div class="value" id="sentCount">0</div></div>
+            <div class="stat"><div class="label">⏳ Sorted</div><div class="value" id="sortedCount">0</div></div>
+            <div class="stat"><div class="label">💰 Real Earnings</div><div class="value" id="earnedDisplay">0.00000000</div></div>
         </div>
     </div>
 
-    <script>
-        // ============================================================
-        // 🔐 PASSWORD LOGIC (PIN: 197328)
-        // ============================================================
-        const PIN = "197328";
-        const overlay = document.getElementById('passwordOverlay');
-        const mainApp = document.getElementById('mainApp');
-        const pinInput = document.getElementById('pinInput');
-        const unlockBtn = document.getElementById('unlockBtn');
-        const pinError = document.getElementById('pinError');
+    <div class="rig-log" id="rigLog">
+        ⚖️ Marduk Secure Rig · Waiting for data...<br>
+        🔄 Click "FETCH REAL" to get data from your running rig.
+    </div>
 
-        function unlock() {
-            if (pinInput.value === PIN) {
-                overlay.style.display = 'none';
-                mainApp.style.display = 'block';
-                pinError.classList.remove('show');
-                initApp();
-            } else {
-                pinError.classList.add('show');
-                pinInput.value = '';
-                pinInput.focus();
-            }
+    <div class="footer">
+        © 2026 Seliim Ahmed · All Rights Reserved · <span id="footerTime">--:--:--</span>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// PASSWORD LOGIC
+// ============================================================
+const PIN = "197328";
+const overlay = document.getElementById('passwordOverlay');
+const mainApp = document.getElementById('mainApp');
+const pinInput = document.getElementById('pinInput');
+const unlockBtn = document.getElementById('unlockBtn');
+const pinError = document.getElementById('pinError');
+
+function unlock() {
+    if (pinInput.value === PIN) {
+        overlay.classList.add('hidden');
+        mainApp.style.display = 'block';
+        pinError.classList.remove('show');
+        initApp();
+    } else {
+        pinError.classList.add('show');
+        pinInput.value = '';
+        pinInput.focus();
+    }
+}
+unlockBtn.addEventListener('click', unlock);
+pinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') unlock(); });
+
+// ============================================================
+// MAIN APP
+// ============================================================
+const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
+const RIG_URL = "/status";
+
+let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0, sent = 0;
+let txCounter = 0;
+
+function addLog(msg, type='info') {
+    const container = document.getElementById('rigLog');
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    const icons = { 'accepted':'✅', 'rejected':'🚫', 'send':'📤', 'error':'⚠️', 'pool':'🌐', 'info':'ℹ️' };
+    div.textContent = `> ${time} ${icons[type]||'ℹ️'} ${msg}`;
+    div.className = type;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    while (container.children.length > 100) container.removeChild(container.firstChild);
+}
+
+function updateDisplay() {
+    document.getElementById('xmrBal').textContent = earned.toFixed(8);
+    document.getElementById('shareDisplay').textContent = shares;
+    document.getElementById('acceptedDisplay').textContent = accepted;
+    document.getElementById('rejectedDisplay').textContent = rejected;
+    document.getElementById('earnedDisplay').textContent = earned.toFixed(8);
+    document.getElementById('packetCount').textContent = counter;
+    document.getElementById('sentCount').textContent = sent;
+    document.getElementById('sortedCount').textContent = counter;
+    document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3, '0');
+    document.getElementById('transferStatus').textContent = `💰 Wallet: ${earned.toFixed(8)} XMR`;
+}
+
+function updateClocks() {
+    const now = new Date().toLocaleTimeString();
+    document.getElementById('headerTime').textContent = now;
+    document.getElementById('footerTime').textContent = now;
+}
+setInterval(updateClocks, 1000);
+updateClocks();
+
+// ============================================================
+// FETCH REAL DATA
+// ============================================================
+async function fetchRealData() {
+    addLog('🔄 Fetching real data from rig...', 'info');
+    try {
+        const res = await fetch(RIG_URL);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        shares = data.shares || 0;
+        accepted = data.accepted || 0;
+        rejected = data.rejected || 0;
+        counter = data.counter || 0;
+        sent = data.sent || 0;
+        earned = data.real_earnings || data.earnings || 0;
+        const poolResponse = data.pool_response || 'unknown';
+        if (poolResponse === 'accepted') {
+            addLog('✅ REAL POOL: Accepted share', 'accepted');
+            document.getElementById('connectionStatus').textContent = '🟢 Connected (Pool: Accepting)';
+        } else if (poolResponse === 'rejected') {
+            addLog('❌ REAL POOL: Rejected share', 'rejected');
+            document.getElementById('connectionStatus').textContent = '🟡 Connected (Pool: Rejecting)';
+        } else {
+            addLog(`⚠️ Pool response: ${poolResponse}`, 'error');
+            document.getElementById('connectionStatus').textContent = '🟡 Connected (Unknown Status)';
         }
+        addLog(`💰 Real earnings: ${earned.toFixed(8)} XMR`, 'accepted');
+        updateDisplay();
+    } catch(e) {
+        addLog(`🚨 RIG OFFLINE: ${e.message}`, 'error');
+        document.getElementById('connectionStatus').textContent = '🔴 Rig Offline';
+        // If the rig is offline, we don't simulate data – we show the error.
+    }
+}
 
-        unlockBtn.addEventListener('click', unlock);
-        pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
-
-        // ============================================================
-        // 📡 ATM LOGIC
-        // ============================================================
-        const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-
-        // ✅ CHANGE THIS IF YOUR SERVER IS ON A DIFFERENT IP/PORT
-        const SERVER_URL = "http://localhost:8080";
-
-        const $ = id => document.getElementById(id);
-        const xmrBal = $('xmrBal');
-        const btcBal = $('btcBal');
-        const bchBal = $('bchBal');
-        const usdtBal = $('usdtBal');
-        const dogeBal = $('dogeBal');
-        const ltcBal = $('ltcBal');
-        const ethBal = $('ethBal');
-        const thbVal = $('thbVal');
-        const rigLog = $('rigLog');
-        const rigStatus = $('rigStatus');
-        const rigShares = $('rigShares');
-        const rigHash = $('rigHash');
-        const rigPool = $('rigPool');
-        const accumulatedEl = $('accumulated');
-        const transferStatus = $('transferStatus');
-        const receiverWallet = $('receiverWallet');
-        const sendAmount = $('sendAmount');
-        const qrArea = $('qrArea');
-        const poolSelect = $('poolSelect');
-        const startBtn = $('startRigBtn');
-        const stopBtn = $('stopRigBtn');
-
-        // ============================================================
-        // 🕐 CLOCK
-        // ============================================================
-        function updateClocks() {
-            const now = new Date().toLocaleTimeString();
-            $('headerTime').textContent = now;
-            $('footerTime').textContent = now;
+// ============================================================
+// ATM — DYNAMIC
+// ============================================================
+function openATM(action) {
+    const tag = document.getElementById('atmActionTag');
+    const icons = {'SEND':'💸', 'RECEIVE':'📥', 'PAY NOW':'💳'};
+    tag.textContent = (icons[action]||'💳') + ' ' + action;
+    txCounter++;
+    const txId = 'X-SA-' + String(txCounter).padStart(3, '0');
+    document.getElementById('atmTxId').textContent = txId;
+    document.getElementById('atmOverlay').classList.add('active');
+    addLog(`🏦 ATM ${action} opened (${txId})`, 'info');
+    if (action === 'SEND') {
+        const receiver = document.getElementById('receiverWallet').value.trim();
+        const amount = document.getElementById('sendAmount').value.trim();
+        if (receiver || amount) {
+            addLog(`📝 SEND to ${receiver||'unknown'} amount ${amount||'0'} XMR`, 'send');
         }
-        setInterval(updateClocks, 1000);
-        updateClocks();
+    }
+}
 
-        // ============================================================
-        // 📝 LOG
-        // ============================================================
-        function addLog(msg, type = '') {
-            const div = document.createElement('div');
-            if (type === 'share') div.style.color = '#88ff88';
-            else if (type === 'hash') div.style.color = '#ffcc00';
-            else if (type === 'real') div.style.color = '#66ccff';
-            else if (type === 'error') div.style.color = '#ff6666';
-            div.textContent = `> ${new Date().toLocaleTimeString()} · ${msg}`;
-            rigLog.appendChild(div);
-            rigLog.scrollTop = rigLog.scrollHeight;
-            while (rigLog.children.length > 50) {
-                rigLog.removeChild(rigLog.firstChild);
-            }
-        }
+function closeATM() {
+    document.getElementById('atmOverlay').classList.remove('active');
+    addLog('✅ ATM closed', 'accepted');
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('atmOverlay').classList.contains('active')) closeATM();
+});
 
-        // ============================================================
-        // 💾 LOAD CACHED EARNINGS
-        // ============================================================
-        let cachedEarnings = localStorage.getItem('marduk_accumulated');
-        if (cachedEarnings) {
-            accumulatedEl.textContent = parseFloat(cachedEarnings).toFixed(8) + ' XMR';
-        }
+function copyWallet() {
+    navigator.clipboard.writeText(WALLET).then(() => {
+        document.getElementById('transferStatus').textContent = '✅ Wallet copied!';
+        setTimeout(() => document.getElementById('transferStatus').textContent = '⏳ Ready', 2000);
+    }).catch(() => {
+        document.getElementById('transferStatus').textContent = '❌ Copy failed';
+    });
+}
 
-        // ============================================================
-        // 🔗 FETCH REAL DATA FROM RIG
-        // ============================================================
-        async function fetchRealData() {
-            addLog('📡 Fetching real rig data...', 'real');
-            try {
-                const res = await fetch(`${SERVER_URL}/miner_status.json`);
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
+document.getElementById('poolSelect').addEventListener('change', function() {
+    addLog(`🌐 Pool selected: ${this.options[this.selectedIndex].text}`, 'pool');
+});
 
-                const hashrate = data.hashrate || 0;
-                const shares = data.shares || 0;
-                const earnings = data.earnings || 0;
-                const pool = data.pool || 'Unknown';
-
-                rigHash.textContent = `${hashrate.toFixed(1)} H/s`;
-                rigShares.textContent = `Shares: ${shares}`;
-                accumulatedEl.textContent = `${earnings.toFixed(8)} XMR`;
-                rigPool.textContent = `Pool: ${pool}`;
-                rigStatus.textContent = '⛏️ LIVE';
-                rigStatus.style.color = '#88ff88';
-
-                localStorage.setItem('marduk_accumulated', earnings);
-                xmrBal.textContent = earnings.toFixed(8);
-                const thb = earnings * 5500;
-                thbVal.textContent = `฿ ${thb.toFixed(2)}`;
-
-                addLog(`✅ REAL: ${hashrate.toFixed(1)} H/s · ${shares} shares · ${earnings.toFixed(8)} XMR · ${pool}`, 'real');
-
-            } catch (e) {
-                rigStatus.textContent = '⏹️ Waiting for rig...';
-                rigStatus.style.color = '#ff6666';
-                addLog('⏳ Rig not reachable. Showing cached data.', 'error');
-            }
-        }
-
-        // ============================================================
-        // ▶ START RIG (via server API)
-        // ============================================================
-        async function startRig() {
-            addLog('▶ Starting rig...', 'real');
-            try {
-                const res = await fetch(`${SERVER_URL}/start`, { method: 'POST' });
-                const data = await res.json();
-                if (data.status === 'started' || data.status === 'already_running') {
-                    addLog('✅ Rig started successfully', 'success');
-                    startBtn.style.display = 'none';
-                    stopBtn.style.display = 'inline-block';
-                    setTimeout(fetchRealData, 2000);
-                } else {
-                    addLog('❌ ' + data.message, 'error');
-                }
-            } catch (e) {
-                addLog('❌ Error starting rig: ' + e.message, 'error');
-            }
-        }
-
-        // ============================================================
-        // ⏹ STOP RIG (via server API)
-        // ============================================================
-        async function stopRig() {
-            addLog('⏹ Stopping rig...', 'real');
-            try {
-                const res = await fetch(`${SERVER_URL}/stop`, { method: 'POST' });
-                const data = await res.json();
-                if (data.status === 'stopped') {
-                    addLog('✅ Rig stopped', 'success');
-                    startBtn.style.display = 'inline-block';
-                    stopBtn.style.display = 'none';
-                } else {
-                    addLog('❌ ' + data.message, 'error');
-                }
-            } catch (e) {
-                addLog('❌ Error stopping rig: ' + e.message, 'error');
-            }
-        }
-
-        // Attach click handlers
-        startBtn.addEventListener('click', startRig);
-        stopBtn.addEventListener('click', stopRig);
-
-        // ============================================================
-        // 💸 TRANSFER FUNCTIONS (simulated)
-        // ============================================================
-        function sendPayment() {
-            const receiver = receiverWallet.value.trim();
-            const amount = sendAmount.value.trim();
-            if (!receiver || !amount) {
-                transferStatus.textContent = '⚠️ Please enter receiver wallet and amount';
-                return;
-            }
-            transferStatus.textContent = `⏳ Sending ${amount} XMR...`;
-            addLog(`💸 Sending ${amount} XMR to ${receiver.substring(0, 12)}...`, 'real');
-            setTimeout(() => {
-                transferStatus.textContent = `✅ Sent ${amount} XMR (simulated)`;
-                addLog(`✅ Sent ${amount} XMR`, 'share');
-                receiverWallet.value = '';
-                sendAmount.value = '';
-            }, 1500);
-        }
-
-        function receivePayment() {
-            const amount = sendAmount.value.trim() || '0.01';
-            const qrText = `xmr:${WALLET}?amount=${amount}`;
-            qrArea.innerHTML = `
-                <span class="qr-icon">📱</span>
-                <span class="qr-hint">QR: ${qrText}</span>
-                <button class="btn primary" style="padding:0.2rem 0.8rem;font-size:0.6rem;flex:0 0 auto;" onclick="copyQR()">📋 COPY</button>
-            `;
-            transferStatus.textContent = `📥 Receive ${amount} XMR · QR generated`;
-            addLog(`📥 QR generated for ${amount} XMR`, 'real');
-        }
-
-        function copyQR() {
-            const qrText = qrArea.querySelector('.qr-hint')?.textContent || '';
-            navigator.clipboard.writeText(qrText.replace('QR: ', ''));
-            transferStatus.textContent = '📋 QR copied';
-            addLog('📋 QR copied');
-        }
-
-        function payNow() {
-            const amount = sendAmount.value.trim() || '0.01';
-            transferStatus.textContent = `💳 Processing payment of ${amount} XMR...`;
-            addLog(`💳 Paying ${amount} XMR...`, 'real');
-            setTimeout(() => {
-                transferStatus.textContent = `✅ Paid ${amount} XMR (simulated)`;
-                addLog(`✅ Paid ${amount} XMR`, 'share');
-                sendAmount.value = '';
-            }, 1500);
-        }
-
-        function copyWallet() {
-            navigator.clipboard.writeText(WALLET);
-            addLog('📋 Wallet copied');
-        }
-
-        // ============================================================
-        // 🚀 INIT
-        // ============================================================
-        function initApp() {
-            addLog('⚖️ Marduk Real Rig v1.0');
-            addLog('📡 Waiting for rig data...');
-            fetchRealData();
-
-            // Auto-refresh every 5 seconds
-            setInterval(fetchRealData, 5000);
-
-            poolSelect.addEventListener('change', function() {
-                const pool = this.options[this.selectedIndex].text;
-                addLog(`🔄 Selected pool: ${pool}`, 'info');
-            });
-        }
-    </script>
+// ============================================================
+// INIT
+// ============================================================
+function initApp() {
+    addLog('🚀 Marduk Secure Rig + ATM ready', 'info');
+    addLog('💡 Click "FETCH REAL" to pull data from your running rig.', 'info');
+    addLog('💡 Select a pool from the dropdown above.', 'info');
+    updateDisplay();
+    fetchRealData();
+    setInterval(fetchRealData, 5000);
+}
+</script>
 </body>
 </html>
