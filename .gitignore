@@ -1,10 +1,10 @@
-# Compiled output
-marduk_rig
+# Compiled binaries
+miner
 *.o
 *.exe
 *.out
 
-# Mining data (keep safe)
+# Mining data
 earnings.dat
 miner_status.json
 *.log
@@ -13,14 +13,17 @@ miner_status.json
 build/
 cmake-build-*/
 
-# Editor temp files
+# Editor files
 *.swp
 *~
 .DS_Store
 Thumbs.db
 
-# Your wallet and config – keep private
+# Sensitive
 *.conf
 *.cfg
 *.key
 *.pem
+*.pwd
+wallet.txt
+pass.txt
