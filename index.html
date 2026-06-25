@@ -440,7 +440,7 @@ async function fetchRealData() {
     } catch(e) {
         addLog(`🚨 RIG OFFLINE: ${e.message}`, 'error');
         document.getElementById('connectionStatus').textContent = '🔴 Rig Offline';
-        // If the rig is offline, we don't simulate data – we show the error.
+        // Do not simulate – show error.
     }
 }
 
