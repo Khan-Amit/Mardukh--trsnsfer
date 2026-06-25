@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK RIG v5.1 — WITH WEB SERVER (FIXED)
+// ⚖️ MARDUK RIG v5.2 — WITH FULL WEB SERVER (index.html + /status)
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -507,10 +507,27 @@ public:
 };
 
 // ============================================================
-// 🌐 WEB SERVER — Serves miner_status.json to dashboard
+// 🌐 WEB SERVER — Serves index.html and /status
 // ============================================================
 
 class WebServer {
+private:
+    static string readFile(const string& filename) {
+        ifstream file(filename);
+        if (!file.is_open()) return "";
+        stringstream ss; ss << file.rdbuf();
+        return ss.str();
+    }
+
+    static string getStatusJSON() {
+        ifstream file("miner_status.json");
+        if (file.is_open()) {
+            stringstream ss; ss << file.rdbuf();
+            return ss.str();
+        }
+        return R"({"hashrate":0,"shares":0,"earnings":0,"pool":"none","crypto":"none"})";
+    }
+
 public:
     static void start() {
         thread([](){
@@ -539,16 +556,30 @@ public:
                 int client = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
                 if (client < 0) continue;
 
-                string data;
-                ifstream file("miner_status.json");
-                if (file.is_open()) {
-                    stringstream ss; ss << file.rdbuf();
-                    data = ss.str();
-                    file.close();
-                } else {
-                    data = R"({"hashrate":0,"shares":0,"earnings":0,"pool":"none","crypto":"none"})";
+                // Read request first line to get path
+                char buffer[1024] = {0};
+                recv(client, buffer, 1023, 0);
+                string request(buffer);
+                string path = "/";
+                if (request.find("GET ") != string::npos) {
+                    size_t start = request.find("GET ") + 4;
+                    size_t end = request.find(" ", start);
+                    if (end != string::npos) path = request.substr(start, end - start);
                 }
-                string response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + data;
+
+                string response;
+                if (path == "/status" || path == "/status/") {
+                    // Return JSON
+                    string json = getStatusJSON();
+                    response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + json;
+                } else {
+                    // Serve index.html
+                    string html = readFile("index.html");
+                    if (html.empty()) {
+                        html = "<html><body><h1>Marduk Rig</h1><p>index.html not found</p></body></html>";
+                    }
+                    response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html;
+                }
                 send(client, response.c_str(), response.size(), 0);
                 close(client);
             }
@@ -565,7 +596,7 @@ int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK RIG v5.1 — WITH WEB SERVER" << endl;
+    cout << "⚖️ MARDUK RIG v5.2 — WITH FULL WEB SERVER" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Saved Earnings: " << TOTAL_EARNINGS.load() << " XMR" << endl;
@@ -636,7 +667,7 @@ int main() {
 
     } else if (choice == (int)POOLS.size() + 1) {
         cout << "\n⛏️ MINING ALL POOLS (cycling every 30 seconds)..." << endl;
-        WebServer::start(); // start web server once
+        WebServer::start();
         while (MINING) {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
@@ -657,13 +688,11 @@ int main() {
                     }));
                 }
 
-                // mine for 30 seconds
                 auto start = chrono::high_resolution_clock::now();
                 while (chrono::duration<double>(chrono::high_resolution_clock::now() - start).count() < 30 && MINING) {
                     this_thread::sleep_for(chrono::seconds(1));
                 }
 
-                // stop threads
                 MINING = false;
                 for (auto& w : workers) {
                     if (w.joinable()) w.join();
