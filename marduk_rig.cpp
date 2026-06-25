@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK RIG v6.1 — FORCE MINING (always runs)
+// ⚖️ MARDUK RIG v6.2 — FIXED ATOMIC ADD
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -383,7 +383,8 @@ public:
             if ((current.state & 0xFFFFFFFF) == 0 && !ternaryData.empty()) {
                 int shares = TOTAL_SHARES.fetch_add(1) + 1;
                 double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
-                TOTAL_EARNINGS += earn;
+                // 🔧 FIX: atomic<double> cannot use +=, use fetch_add
+                TOTAL_EARNINGS.fetch_add(earn, std::memory_order_relaxed);
                 saveEarnings(TOTAL_EARNINGS.load());
 
                 lock_guard<mutex> lock(LOG_MUTEX);
@@ -510,7 +511,7 @@ int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK RIG v6.1 — FORCE MINING (always runs)" << endl;
+    cout << "⚖️ MARDUK RIG v6.2 — FIXED ATOMIC ADD" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Saved Earnings: " << TOTAL_EARNINGS.load() << " XMR" << endl;
