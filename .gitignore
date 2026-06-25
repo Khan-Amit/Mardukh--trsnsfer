@@ -1,29 +1,15 @@
-# Compiled binaries
-miner
-*.o
-*.exe
-*.out
-
-# Mining data
-earnings.dat
-miner_status.json
-*.log
-
-# Build directories
-build/
-cmake-build-*/
-
-# Editor files
-*.swp
-*~
-.DS_Store
-Thumbs.db
-
-# Sensitive
-*.conf
-*.cfg
-*.key
-*.pem
-*.pwd
-wallet.txt
-pass.txt
+.gitignore
+GGGG.OOO
+License
+README.md
+Xx
+atm.html
+egg_miner_rig.cpp
+enigma_wallet.cpp
+handshake_api.py
+index.html
+marduk.c
+marduk_rig.c
+marduk_server.py
+miner.c
+run_rig.sh
