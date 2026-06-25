@@ -1,5 +1,5 @@
 // ============================================================
-// MARDUK MINER v4.1 — WITH FULLSCREEN COUNTER WINDOW
+// MARDUK MINER v4.1 — FULLSCREEN COUNTER
 // ============================================================
 //
 // COMPILE: gcc -O3 -o miner miner.c -lpthread
