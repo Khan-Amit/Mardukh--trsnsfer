@@ -1,16 +1,9 @@
 // ============================================================
-// ⚖️ MARDUK v8.0 — THE NET (catches designated data from stream)
+// ⚖️ MARDUK v8.0 — THE NET
 // ============================================================
-// 
-// The net is placed in the canal. Data flows through.
-// Only data matching the net holes (patterns) is caught.
-// Wrong fish are thrown out by Egg Shorter.
-// Clean data is submitted to pool via wallet.
-// Pool accepts → wallet receives earnings.
-//
-// Intellectual Property of Seliim Ahmed
-// Email: amit.khanna.1082@gmail.com
-//
+// Compile: g++ -std=c++11 -pthread -O3 -o marduk_net marduk_net.cpp
+// Run: ./marduk_net
+// Then pipe or type data into it.
 // ============================================================
 
 #include <iostream>
@@ -30,11 +23,12 @@
 #include <mutex>
 #include <queue>
 #include <condition_variable>
+#include <random>
 
 using namespace std;
 
 // ============================================================
-// 🔧 CONFIGURATION
+// CONFIGURATION
 // ============================================================
 
 const string WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
@@ -48,7 +42,7 @@ atomic<double> TOTAL_EARNINGS(0.0);
 mutex LOG_MUTEX;
 
 // ============================================================
-// 💾 PERSISTENT EARNINGS
+// PERSISTENT EARNINGS
 // ============================================================
 
 double loadEarnings() {
@@ -64,7 +58,7 @@ void saveEarnings(double earnings) {
 }
 
 // ============================================================
-// 🌍 POOL CONFIGURATIONS
+// POOL CONFIGURATIONS
 // ============================================================
 
 struct PoolConfig {
@@ -92,12 +86,11 @@ vector<PoolConfig> POOLS = {
 };
 
 // ============================================================
-// 🥚 EGG SHORTER — The Sorter (throws out wrong fish)
+// EGG SHORTER — throws out bad chunks (000 and 111)
 // ============================================================
 
 class EggShorter {
 public:
-    // Convert any input to binary
     inline string toBinary(const string& input) {
         string binary;
         binary.reserve(input.length() * 8);
@@ -109,7 +102,6 @@ public:
         return binary;
     }
 
-    // Remove patterns that are "bad" (all 0s or all 1s)
     inline string shorten(const string& binary) {
         string shortened;
         shortened.reserve(binary.length() / 3);
@@ -118,7 +110,6 @@ public:
             size_t rem = len - i;
             if (rem < 3) break;
             string chunk = binary.substr(i, 3);
-            // If the chunk is all zeros or all ones, throw it out
             if (chunk != "000" && chunk != "111") {
                 shortened += chunk;
             }
@@ -126,45 +117,27 @@ public:
         return shortened;
     }
 
-    // Full process: input → binary → remove bad chunks
     inline string process(const string& input) {
         return shorten(toBinary(input));
     }
 };
 
 // ============================================================
-// ⛏️ SLUICE-BENCH — The Net (catches specific patterns)
+// SLUICE-BENCH — The Net (catches patterns)
 // ============================================================
 
 class SluiceBench {
 private:
-    // Net holes (patterns) for XMR
     vector<pair<string, int>> xmrPatterns = {
-        {"101", 5},   // Block Header Start
-        {"110", 5},   // Transaction Signature
-        {"011", 4},   // Hash Marker
-        {"1110", 4},  // Difficulty Target
-        {"1001", 3},  // Accepted Share
-        {"0101", 3},  // Nonce
-        {"0011", 2},  // Timestamp
-        {"1111", 5}   // RingCT Signature
+        {"101", 5}, {"110", 5}, {"011", 4}, {"1110", 4},
+        {"1001", 3}, {"0101", 3}, {"0011", 2}, {"1111", 5}
     };
-
-    // Net holes (patterns) for BTC
     vector<pair<string, int>> btcPatterns = {
-        {"010", 5},   // Block Header Start
-        {"001", 5},   // Transaction Marker
-        {"111", 4},   // Hash Marker
-        {"1010", 4},  // Difficulty Target
-        {"0101", 3},  // Nonce
-        {"1100", 4},  // Merkle Root
-        {"0010", 2},  // Version
-        {"1001", 5},  // Mined Block
-        {"0110", 4}   // Coinbase
+        {"010", 5}, {"001", 5}, {"111", 4}, {"1010", 4},
+        {"0101", 3}, {"1100", 4}, {"0010", 2}, {"1001", 5}, {"0110", 4}
     };
 
 public:
-    // Check if a chunk matches any pattern in the net
     inline int getPriority(const string& chunk, const string& crypto = "XMR") {
         const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
         for (const auto& p : patterns) {
@@ -175,7 +148,6 @@ public:
         return 0;
     }
 
-    // Catch only chunks with priority >= minPriority
     inline string filter(const string& binary, const string& crypto = "XMR", int minPriority = 3) {
         string filtered;
         filtered.reserve(binary.length() / 2);
@@ -193,7 +165,7 @@ public:
 };
 
 // ============================================================
-// 🔢 TERNARY — Optional conversion (kept for compatibility)
+// TERNARY — optional conversion
 // ============================================================
 
 class TernaryProcessor {
@@ -230,18 +202,15 @@ public:
 };
 
 // ============================================================
-// 📡 STRATUM CLIENT — The Fisherman (submits to pool)
+// STRATUM CLIENT — submits to pool
 // ============================================================
 
 class StratumClient {
 private:
     int sock;
-    string wallet;
-    string pass;
-    bool connected;
-    string poolHost;
+    string wallet, pass, poolHost, poolName;
     int poolPort;
-    string poolName;
+    bool connected;
     int jobId;
     string extraNonce1;
 
@@ -254,20 +223,14 @@ public:
     bool connectToPool() {
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) return false;
-
         struct hostent* server = gethostbyname(poolHost.c_str());
         if (!server) return false;
-
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
         addr.sin_port = htons(poolPort);
-
-        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-            return false;
-        }
-
+        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) return false;
         connected = true;
         cout << "🌊 Net placed in " << poolName << endl;
         return true;
@@ -282,8 +245,6 @@ public:
         string login = R"({"id":1,"method":"login","params":{"login":")" + wallet + R"(","pass":")" + pass + R"("}})";
         string msg = to_string(login.length()) + "\n" + login + "\n";
         send(sock, msg.c_str(), msg.length(), 0);
-        cout << "📤 Wallet connected to " << poolName << endl;
-
         char buffer[1024];
         int n = recv(sock, buffer, 1023, 0);
         if (n > 0) {
@@ -295,24 +256,18 @@ public:
         return false;
     }
 
-    // Submit cleaned data to pool
     bool submitShare(const string& shareData, uint64_t nonce) {
         if (!connected) return false;
-
         string submit = R"({"id":2,"method":"submit","params":[")" + wallet + R"(",")" + to_string(jobId) + R"(",")" + extraNonce1 + R"(",")" + to_string(nonce) + R"("]})";
         string msg = to_string(submit.length()) + "\n" + submit + "\n";
         send(sock, msg.c_str(), msg.length(), 0);
-
         char buffer[1024];
         int n = recv(sock, buffer, 1023, 0);
         if (n > 0) {
             buffer[n] = '\0';
             string response(buffer);
-            if (response.find("accepted") != string::npos) {
-                return true;
-            }
+            if (response.find("accepted") != string::npos) return true;
         }
-        // For this system, always accept (the net catches the right fish)
         return true;
     }
 
@@ -320,7 +275,7 @@ public:
 };
 
 // ============================================================
-// 🔄 THREAD-SAFE QUEUE — Data flowing in the canal
+// THREAD-SAFE QUEUE — data flowing in the canal
 // ============================================================
 
 class DataQueue {
@@ -347,7 +302,7 @@ public:
 DataQueue canal;
 
 // ============================================================
-// ⚙️ THE NET — Worker thread: catch, sort, submit
+// THE NET — catches, sorts, submits
 // ============================================================
 
 class TheNet {
@@ -376,10 +331,7 @@ public:
             string filtered = net.filter(binary, crypto, MIN_PATTERN_PRIORITY);
 
             // 3. Sorter throws out wrong fish
-            if (filtered.empty()) {
-                // Wrong fish – throw it out
-                continue;
-            }
+            if (filtered.empty()) continue;
 
             // 4. Optional ternary conversion
             string finalData = ternary.process(filtered);
@@ -402,7 +354,6 @@ public:
                 }
             }
 
-            // Update status file every 100 catches
             if (TOTAL_SHARES.load() % 100 == 0) {
                 writeStatus();
             }
@@ -424,7 +375,7 @@ public:
 };
 
 // ============================================================
-// 📥 DATA COLLECTOR — collects data from canal (stdin)
+// DATA COLLECTOR — reads from stdin
 // ============================================================
 
 void collectData() {
@@ -437,7 +388,7 @@ void collectData() {
 }
 
 // ============================================================
-// 🌐 WEB SERVER — shows what the net caught
+// WEB SERVER
 // ============================================================
 
 class WebServer {
@@ -508,7 +459,7 @@ public:
 };
 
 // ============================================================
-// 🚀 MAIN
+// MAIN
 // ============================================================
 
 int main() {
@@ -554,7 +505,6 @@ int main() {
         if (threads == 0) threads = 2;
         cout << "💻 Using " << threads << " nets" << endl;
 
-        // Start data collector (puts data into the canal)
         thread collector(collectData);
 
         vector<thread> nets;
