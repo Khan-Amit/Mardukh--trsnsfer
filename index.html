@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marduk · ATM + Rig</title>
+    <title>Marduk · Full Rig + ATM</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -97,6 +97,22 @@
         .balance-item .value.ltc { color: #a5a5a5; }
         .balance-item .value.eth { color: #627eea; }
         .balance-item .value.thb { color: #88ff88; }
+
+        .pool-select {
+            background: #010410;
+            border: 1px solid #1a2a4a;
+            border-radius: 2rem;
+            padding: 0.6rem 1.2rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #88ffaa;
+            width: 100%;
+            outline: none;
+            margin-bottom: 0.5rem;
+        }
+        .pool-select:focus { border-color: #ffcc00; }
+        .pool-select optgroup { color: #ffcc00; font-style: normal; }
+        .pool-select option { color: #88ffaa; }
 
         .btn-group {
             display: flex;
@@ -294,13 +310,13 @@
 <div class="container">
     <div class="header">
         <div>
-            <span class="title">⚖️ MARDUK · ATM + RIG</span>
-            <span class="sub">Real Data from Your Monero Wallet</span>
+            <span class="title">⚖️ MARDUK · FULL RIG + ATM</span>
+            <span class="sub">Real Data from Your Running Rig</span>
         </div>
         <div class="time" id="headerTime">--:--:--</div>
     </div>
 
-    <!-- Wallet Display -->
+    <!-- Wallet -->
     <div class="wallet-box">
         <div class="wallet-label">📬 Your Monero Wallet</div>
         <div class="wallet-address">
@@ -312,12 +328,37 @@
         </div>
     </div>
 
-    <!-- Balances (Real data from rig) -->
+    <!-- Balances -->
     <div class="balance-grid">
         <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
         <div class="balance-item"><div class="label">📊 Shares</div><div class="value" id="shareDisplay">0</div></div>
         <div class="balance-item"><div class="label">✅ Accepted</div><div class="value" id="acceptedDisplay" style="color:#88ff88;">0</div></div>
         <div class="balance-item"><div class="label">🚫 Rejected</div><div class="value" id="rejectedDisplay" style="color:#ff6666;">0</div></div>
+    </div>
+
+    <!-- Pool Selector -->
+    <div style="margin-bottom:1rem;">
+        <label style="font-size:0.65rem;color:#4a5a6a;">⛏️ Select Mining Pool</label>
+        <select class="pool-select" id="poolSelect">
+            <optgroup label="🟠 MONERO (XMR)">
+                <option value="xmr_kryptex">Kryptex (UAE) · xmr-ae.kryptex.network:7029</option>
+                <option value="xmr_support">SupportXMR (EU) · pool.supportxmr.com:3333</option>
+            </optgroup>
+            <optgroup label="₿ BITCOIN (BTC)">
+                <option value="btc_viabtc1">ViaBTC · btc.viabtc.top:3333</option>
+                <option value="btc_viabtc2">ViaBTC · btc.viabtc.top:25</option>
+                <option value="btc_viabtc3">ViaBTC · btc.viabtc.top:443</option>
+                <option value="btc_ant1">AntPool · antpool.com:3333</option>
+                <option value="btc_ant2">AntPool · antpool.com:25</option>
+                <option value="btc_ant3">AntPool · antpool.com:443</option>
+                <option value="btc_f2pool1">F2Pool · f2pool.com:3333</option>
+                <option value="btc_f2pool2">F2Pool · f2pool.com:25</option>
+                <option value="btc_f2pool3">F2Pool · f2pool.com:443</option>
+                <option value="btc_binance1">Binance Pool · poolbinance.com:3333</option>
+                <option value="btc_binance2">Binance Pool · poolbinance.com:25</option>
+                <option value="btc_kryptex">Kryptex BTC · btc.kryptex.network:77</option>
+            </optgroup>
+        </select>
     </div>
 
     <!-- SEND / RECEIVE / PAY -->
@@ -339,12 +380,12 @@
         <div class="transfer-status" id="transferStatus">⏳ Ready</div>
     </div>
 
-    <!-- Control Buttons -->
+    <!-- Buttons -->
     <div class="btn-group">
         <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
         <button class="btn success" onclick="copyWallet()">📋 COPY</button>
-        <button class="btn gold" onclick="startSimulation()">▶ START RIG (SIM)</button>
-        <button class="btn danger" id="stopBtn" onclick="stopSimulation()" style="display:none;">⏹ STOP RIG</button>
+        <button class="btn gold" onclick="startRig()">▶ START RIG (SIM)</button>
+        <button class="btn danger" id="stopBtn" onclick="stopRig()" style="display:none;">⏹ STOP RIG</button>
     </div>
 
     <!-- X-SA Counter -->
@@ -359,9 +400,9 @@
         </div>
     </div>
 
-    <!-- Rig Log -->
+    <!-- Log -->
     <div class="rig-log" id="rigLog">
-        ⚖️ Marduk Rig · Waiting for data...<br>
+        ⚖️ Marduk Full Rig · Waiting for data...<br>
         🔄 Click "FETCH REAL" to get data from your running rig.
     </div>
 
@@ -372,15 +413,14 @@
 
 <script>
 // ============================================================
-// MARDUK ATM + RIG — Real Data from C++ Rig
+// MARDUK FULL RIG + ATM — Real Data from C++ Rig
 // ============================================================
 
 const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-const RIG_URL = "http://127.0.0.1:8080/status"; // Your rig's web server
+const RIG_URL = "http://127.0.0.1:8080/status";
 
 let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0, sent = 0;
 let rigRunning = false;
-let autoInterval = null;
 let simInterval = null;
 let usingRealData = false;
 
@@ -434,7 +474,6 @@ async function fetchRealData() {
         const response = await fetch(RIG_URL);
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
-        // Update with real rig data
         shares = data.shares || 0;
         accepted = data.accepted || 0;
         rejected = data.rejected || 0;
@@ -444,7 +483,6 @@ async function fetchRealData() {
         usingRealData = true;
         addLog(`✅ Real data fetched: ${shares} shares, ${earned.toFixed(8)} XMR`, 'accepted');
         updateDisplay();
-        // Also update the rig status to online
         document.querySelector('.header .sub').textContent = '🟢 Connected to Rig';
     } catch (e) {
         usingRealData = false;
@@ -454,7 +492,7 @@ async function fetchRealData() {
 }
 
 // ============================================================
-// SIMULATION MODE (fallback / demo)
+// SIMULATION MODE (fallback)
 // ============================================================
 const dataStream = [
     "BLOCK_12345", "TX_ABCDEF", "MINER_001", "HASH_7890",
@@ -547,7 +585,7 @@ function processSimData(raw) {
     updateDisplay();
 }
 
-function startSimulation() {
+function startRig() {
     if (rigRunning) return;
     rigRunning = true;
     document.querySelector('.btn.gold').style.display = 'none';
@@ -561,7 +599,7 @@ function startSimulation() {
     }, 2500);
 }
 
-function stopSimulation() {
+function stopRig() {
     rigRunning = false;
     clearInterval(simInterval);
     document.querySelector('.btn.gold').style.display = 'inline-block';
@@ -586,7 +624,6 @@ function openATM(action) {
     document.getElementById('atmOverlay').classList.add('active');
     addLog(`🏦 ATM ${action} opened (X-SA-${counterStr})`, 'info');
 
-    // If SEND, also log the amount if entered
     if (action === 'SEND') {
         const receiver = document.getElementById('receiverWallet').value.trim();
         const amount = document.getElementById('sendAmount').value.trim();
@@ -619,12 +656,19 @@ function copyWallet() {
     });
 }
 
+// Pool selector
+document.getElementById('poolSelect').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex].text;
+    addLog(`🌐 Pool selected: ${selected}`, 'info');
+});
+
 // ============================================================
 // INIT
 // ============================================================
-addLog('🚀 Marduk ATM + Rig ready', 'info');
+addLog('🚀 Marduk Full Rig + ATM ready', 'info');
 addLog('💡 Click "FETCH REAL" to pull data from your running rig.', 'info');
 addLog('💡 Or click "START RIG (SIM)" for demo mode.', 'info');
+addLog('💡 Select a pool from the dropdown above.', 'info');
 updateDisplay();
 
 // Try to fetch real data immediately on load
