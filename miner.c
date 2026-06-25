@@ -1,5 +1,5 @@
 // ============================================================
-// MARDUK MINER v4.0 — WITH WEB SERVER
+// MARDUK MINER v4.1 — WITH FULLSCREEN COUNTER WINDOW
 // ============================================================
 //
 // COMPILE: gcc -O3 -o miner miner.c -lpthread
@@ -187,7 +187,7 @@ void submit_share(int sock, const char* data, int share_num) {
 }
 
 // ============================================================
-// WEB SERVER — Serves index.html and /status
+// WEB SERVER — Serves index.html and counter.html
 // ============================================================
 
 const char* get_index_html() {
@@ -199,26 +199,39 @@ const char* get_index_html() {
     "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
     "<title>Marduk Rig</title>"
     "<style>"
-    "body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;padding:2rem;text-align:center;}"
-    "h1{color:#ffcc00;font-size:2.5rem;}"
-    ".card{background:#111;border:1px solid #ffcc00;border-radius:1rem;padding:1.5rem;margin:1rem auto;max-width:600px;}"
-    ".btn{background:#2a4a7a;color:white;border:none;padding:1rem 2rem;border-radius:2rem;font-size:1.2rem;cursor:pointer;}"
-    ".btn:hover{background:#3a5a8a;}"
-    ".counter{font-size:3rem;color:#ffcc00;}"
+    "body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;padding:1rem;text-align:center;margin:0;}"
+    "h1{color:#ffcc00;font-size:2rem;}"
+    ".container{max-width:800px;margin:0 auto;}"
+    ".card{background:#111;border:1px solid #ffcc00;border-radius:1rem;padding:1.5rem;margin:0.8rem auto;}"
+    ".stat{font-size:1.2rem;margin:0.3rem 0;}"
+    ".stat span{color:#ffcc00;font-weight:bold;}"
+    ".counter-box{background:#0a0e1a;border:2px solid #ffcc00;border-radius:1rem;padding:1.5rem;margin:0.8rem auto;}"
+    ".counter-number{font-size:4rem;color:#ffcc00;text-shadow:0 0 30px rgba(255,204,0,0.2);}"
+    ".btn{background:#2a4a7a;color:white;border:none;padding:0.8rem 2.5rem;border-radius:2rem;font-size:1.1rem;cursor:pointer;transition:0.2s;}"
+    ".btn:hover{background:#3a5a8a;transform:scale(1.02);}"
+    ".btn-secondary{background:#4a2a2a;}"
+    ".btn-secondary:hover{background:#5a3a3a;}"
+    ".flex{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}"
     "</style>"
     "</head>"
     "<body>"
+    "<div class='container'>"
     "<h1>⚖️ MARDUK RIG</h1>"
     "<div class='card'>"
-    "<p>📊 Shares: <span id='shares'>0</span></p>"
-    "<p>💰 Earned: <span id='earnings'>0.00000000</span> XMR</p>"
-    "<p>📥 Accepted: <span id='accepted'>0</span></p>"
-    "<p>🚫 Rejected: <span id='rejected'>0</span></p>"
+    "<div class='stat'>📊 Shares: <span id='shares'>0</span></div>"
+    "<div class='stat'>💰 Earned: <span id='earnings'>0.00000000</span> XMR</div>"
+    "<div class='stat'>📥 Accepted: <span id='accepted'>0</span></div>"
+    "<div class='stat'>🚫 Rejected: <span id='rejected'>0</span></div>"
     "</div>"
-    "<div class='card'>"
-    "<p>🔄 X-SA Counter</p>"
-    "<div class='counter' id='xsaCounter'>X-SA-000</div>"
-    "<button class='btn' onclick='openCounter()'>🔓 OPEN COUNTER</button>"
+    "<div class='counter-box'>"
+    "<div style='font-size:0.8rem;color:#888;'>🔄 X-SA COUNTER</div>"
+    "<div class='counter-number' id='xsaCounter'>X-SA-000</div>"
+    "<div class='flex'>"
+    "<button class='btn' onclick='openCounter()'>🔓 OPEN FULLSCREEN</button>"
+    "<button class='btn btn-secondary' onclick='fetchStatus()'>⟳ REFRESH</button>"
+    "</div>"
+    "</div>"
+    "<div style='color:#444;font-size:0.7rem;margin-top:0.5rem;'>© 2026 Seliim Ahmed · All Rights Reserved</div>"
     "</div>"
     "<script>"
     "function fetchStatus(){"
@@ -230,7 +243,7 @@ const char* get_index_html() {
     "document.getElementById('xsaCounter').textContent='X-SA-'+String(d.counter||0).padStart(3,'0');"
     "}).catch(()=>{});}"
     "function openCounter(){"
-    "window.open('/counter','_blank','width=400,height=600');"
+    "window.open('/counter','_blank','width=500,height=700,scrollbars=no');"
     "}"
     "setInterval(fetchStatus,2000);"
     "fetchStatus();"
@@ -248,33 +261,60 @@ const char* get_counter_html() {
     "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
     "<title>X-SA Counter</title>"
     "<style>"
-    "body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;padding:2rem;text-align:center;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;}"
-    "h1{color:#ffcc00;font-size:2rem;}"
-    ".counter{font-size:8rem;color:#ffcc00;text-shadow:0 0 40px rgba(255,204,0,0.3);padding:2rem;border:2px solid #ffcc00;border-radius:2rem;background:#111;margin:2rem 0;}"
-    ".status{font-size:1.2rem;color:#88ffaa;}"
-    ".btn{background:#2a4a7a;color:white;border:none;padding:0.8rem 2rem;border-radius:2rem;font-size:1rem;cursor:pointer;}"
-    ".btn:hover{background:#3a5a8a;}"
-    ".running{color:#88ff88;}"
+    "*{margin:0;padding:0;box-sizing:border-box;}"
+    "body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem;margin:0;overflow:hidden;}"
+    ".background{position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,#0a1a0a,#0a0e1a);z-index:-1;}"
+    ".container{text-align:center;max-width:100%;}"
+    ".title{color:#ffcc00;font-size:1.5rem;letter-spacing:3px;margin-bottom:1rem;}"
+    ".counter-display{font-size:10rem;color:#ffcc00;text-shadow:0 0 60px rgba(255,204,0,0.3),0 0 120px rgba(255,204,0,0.1);padding:1rem 2rem;border:3px solid #ffcc00;border-radius:2rem;background:rgba(0,0,0,0.5);margin:0.5rem 0;line-height:1.2;}"
+    ".details{font-size:1.1rem;color:#88ffaa;margin:0.5rem 0;}"
+    ".details span{color:#ffcc00;}"
+    ".status-line{font-size:0.9rem;color:#888;margin:0.3rem 0;}"
+    ".status-line .online{color:#88ff88;}"
+    ".status-line .offline{color:#ff6666;}"
+    ".footer{position:fixed;bottom:1rem;font-size:0.6rem;color:#444;}"
+    ".pulse{animation:pulse 2s ease-in-out infinite;}"
+    "@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.7;}}"
+    ".btn-close{background:#2a2a2a;border:1px solid #444;color:#888;padding:0.5rem 2rem;border-radius:2rem;font-size:0.8rem;cursor:pointer;margin-top:0.5rem;font-family:monospace;}"
+    ".btn-close:hover{background:#3a3a3a;color:#aaa;}"
+    ".grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin:0.5rem 0;}"
+    ".grid-item{background:rgba(0,0,0,0.3);border:1px solid #1a2a1a;border-radius:0.5rem;padding:0.3rem 0.8rem;}"
+    ".grid-item .label{color:#555;font-size:0.6rem;text-transform:uppercase;}"
+    ".grid-item .value{color:#88ffaa;font-size:1rem;}"
     "</style>"
     "</head>"
     "<body>"
-    "<h1>🔄 X-SA COUNTER</h1>"
-    "<div class='counter' id='xsaDisplay'>X-SA-000</div>"
-    "<div class='status' id='statusDisplay'>⏳ Waiting for updates...</div>"
-    "<br>"
-    "<button class='btn' onclick='window.close()'>❌ CLOSE</button>"
+    "<div class='background'></div>"
+    "<div class='container'>"
+    "<div class='title'>🔄 X-SA COUNTER</div>"
+    "<div class='counter-display pulse' id='xsaDisplay'>X-SA-000</div>"
+    "<div class='details'>⛏️ <span id='sharesDisplay'>0</span> shares · 💰 <span id='earningsDisplay'>0.00000000</span> XMR</div>"
+    "<div class='grid'>"
+    "<div class='grid-item'><div class='label'>Accepted</div><div class='value' id='acceptedDisplay'>0</div></div>"
+    "<div class='grid-item'><div class='label'>Rejected</div><div class='value' id='rejectedDisplay'>0</div></div>"
+    "<div class='grid-item'><div class='label'>Pool</div><div class='value' style='font-size:0.7rem;'>supportxmr.com</div></div>"
+    "<div class='grid-item'><div class='label'>Status</div><div class='value' id='statusDisplay' style='color:#88ff88;'>🟢 Online</div></div>"
+    "</div>"
+    "<button class='btn-close' onclick='window.close()'>❌ CLOSE</button>"
+    "</div>"
+    "<div class='footer'>© 2026 Seliim Ahmed · All Rights Reserved</div>"
     "<script>"
     "function updateCounter(){"
     "fetch('/status').then(r=>r.json()).then(d=>{"
     "const num=String(d.counter||0).padStart(3,'0');"
     "document.getElementById('xsaDisplay').textContent='X-SA-'+num;"
-    "document.getElementById('statusDisplay').textContent='✅ Running | Shares: '+d.shares+' | Earned: '+d.earnings.toFixed(8)+' XMR';"
-    "document.getElementById('statusDisplay').className='status running';"
+    "document.getElementById('sharesDisplay').textContent=d.shares;"
+    "document.getElementById('earningsDisplay').textContent=d.earnings.toFixed(8);"
+    "document.getElementById('acceptedDisplay').textContent=d.accepted;"
+    "document.getElementById('rejectedDisplay').textContent=d.rejected;"
+    "document.getElementById('statusDisplay').textContent='🟢 Online';"
+    "document.getElementById('statusDisplay').style.color='#88ff88';"
     "}).catch(()=>{"
-    "document.getElementById('statusDisplay').textContent='❌ Disconnected from rig';"
+    "document.getElementById('statusDisplay').textContent='🔴 Offline';"
+    "document.getElementById('statusDisplay').style.color='#ff6666';"
     "});"
     "}"
-    "setInterval(updateCounter,2000);"
+    "setInterval(updateCounter,1500);"
     "updateCounter();"
     "</script>"
     "</body>"
@@ -313,7 +353,7 @@ void* web_server_thread(void* arg) {
         char buffer[4096] = {0};
         recv(client, buffer, 4095, 0);
         
-        char response[8192];
+        char response[16384];
         char* path = "/";
         
         // Parse path from request
@@ -381,7 +421,7 @@ void process_achi(const char* code, int sock) {
     pthread_mutex_lock(&lock);
     share_num++;
     total_lines++;
-    xsa_counter++;  // Increment X-SA counter
+    xsa_counter++;
     int num = share_num;
     pthread_mutex_unlock(&lock);
     
@@ -453,7 +493,7 @@ void* worker_thread(void* arg) {
 
 int main(int argc, char* argv[]) {
     printf("\n════════════════════════════════════════════════════\n");
-    printf("⚖️ MARDUK MINER v4.0 — WITH WEB SERVER\n");
+    printf("⚖️ MARDUK MINER v4.1 — FULLSCREEN COUNTER\n");
     printf("════════════════════════════════════════════════════\n");
     printf("📤 Wallet: %.20s...\n", WALLET);
     printf("🌊 Pool: %s:%d\n", POOL_HOST, POOL_PORT);
@@ -466,7 +506,6 @@ int main(int argc, char* argv[]) {
     printf("📡 DATA SOURCE: STDIN (pipe, file, or keyboard)\n");
     printf("────────────────────────────────────────────────────\n");
     
-    // Connect to pool
     int sock = connect_pool();
     if (sock < 0) {
         printf("⚠️ Pool offline — running in offline mode\n");
@@ -475,7 +514,6 @@ int main(int argc, char* argv[]) {
         printf("✅ Connected to pool\n");
     }
     
-    // Start web server
     pthread_t web_thread;
     pthread_create(&web_thread, NULL, web_server_thread, NULL);
     
@@ -488,7 +526,6 @@ int main(int argc, char* argv[]) {
     }
     printf("────────────────────────────────────────────────────\n");
     
-    // Create worker threads
     pthread_t threads[MAX_THREADS];
     for (int i = 0; i < MAX_THREADS; i++) {
         pthread_create(&threads[i], NULL, worker_thread, &sock);
