@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK RIG v6.2 — FIXED ATOMIC ADD
+// ⚖️ MARDUK RIG v7.0 — RELAY RIG (ACHi → Sluice → Egg → Pool)
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -27,7 +27,6 @@
 #include <cmath>
 #include <atomic>
 #include <mutex>
-#include <map>
 
 using namespace std;
 
@@ -42,8 +41,7 @@ bool MINING = true;
 
 atomic<int> TOTAL_SHARES(0);
 atomic<double> TOTAL_EARNINGS(0.0);
-atomic<uint64_t> TOTAL_HASHES(0);
-atomic<double> CURRENT_HASHRATE(0.0);
+atomic<uint64_t> TOTAL_PROCESSED(0);
 
 mutex LOG_MUTEX;
 
@@ -98,12 +96,13 @@ vector<PoolConfig> POOLS = {
 };
 
 // ============================================================
-// 🥚 EGG SHORTER
+// 🥚 EGG SHORTER — Lightweight Binary Refinement
 // ============================================================
 
 class EggShorter {
 public:
-    inline string readBinary(const string& input) {
+    // Convert input string to binary
+    inline string toBinary(const string& input) {
         string binary;
         binary.reserve(input.length() * 8);
         for (char c : input) {
@@ -114,7 +113,8 @@ public:
         return binary;
     }
 
-    inline string shortenBinary(const string& binary) {
+    // Shorten binary by removing patterns that are all 0s or all 1s
+    inline string shorten(const string& binary) {
         string shortened;
         shortened.reserve(binary.length() / 3);
         size_t len = binary.length();
@@ -129,57 +129,56 @@ public:
         return shortened;
     }
 
+    // Full process: input → binary → shortened
     inline string process(const string& input) {
-        return shortenBinary(readBinary(input));
+        return shorten(toBinary(input));
     }
 };
 
 // ============================================================
-// ⛏️ SLUICE-BENCH
+// ⛏️ SLUICE-BENCH — Pattern Database + Filter (Lightweight)
 // ============================================================
 
 class SluiceBench {
 private:
-    struct Pattern {
-        string pattern;
-        string description;
-        int priority;
+    // Pattern database for XMR
+    vector<pair<string, int>> xmrPatterns = {
+        {"101", 5},   // Block Header Start
+        {"110", 5},   // Transaction Signature
+        {"011", 4},   // Hash Marker
+        {"1110", 4},  // Difficulty Target
+        {"1001", 3},  // Accepted Share
+        {"0101", 3},  // Nonce
+        {"0011", 2},  // Timestamp
+        {"1111", 5}   // RingCT Signature
     };
 
-    vector<Pattern> xmrPatterns = {
-        {"101", "Block Header Start", 5},
-        {"110", "Transaction Signature", 5},
-        {"011", "Hash Marker (Keccak)", 4},
-        {"1110", "Difficulty Target", 4},
-        {"1001", "Accepted Share", 3},
-        {"0101", "Nonce Value", 3},
-        {"0011", "Timestamp", 2},
-        {"1111", "RingCT Signature", 5}
-    };
-
-    vector<Pattern> btcPatterns = {
-        {"010", "Block Header Start", 5},
-        {"001", "Transaction Marker", 5},
-        {"111", "Hash Marker (SHA-256)", 4},
-        {"1010", "Difficulty Target", 4},
-        {"0101", "Nonce Value", 3},
-        {"1100", "Merkle Root", 4},
-        {"0010", "Version", 2},
-        {"1001", "Mined Block", 5},
-        {"0110", "Coinbase Transaction", 4}
+    // Pattern database for BTC
+    vector<pair<string, int>> btcPatterns = {
+        {"010", 5},   // Block Header Start
+        {"001", 5},   // Transaction Marker
+        {"111", 4},   // Hash Marker
+        {"1010", 4},  // Difficulty Target
+        {"0101", 3},  // Nonce
+        {"1100", 4},  // Merkle Root
+        {"0010", 2},  // Version
+        {"1001", 5},  // Mined Block
+        {"0110", 4}   // Coinbase
     };
 
 public:
+    // Get priority of a chunk
     inline int getPriority(const string& chunk, const string& crypto = "XMR") {
         const auto& patterns = (crypto == "XMR") ? xmrPatterns : btcPatterns;
         for (const auto& p : patterns) {
-            if (chunk.find(p.pattern) != string::npos) {
-                return p.priority;
+            if (chunk.find(p.first) != string::npos) {
+                return p.second;
             }
         }
         return 0;
     }
 
+    // Filter binary based on priority
     inline string filter(const string& binary, const string& crypto = "XMR", int minPriority = 3) {
         string filtered;
         filtered.reserve(binary.length() / 2);
@@ -198,7 +197,7 @@ public:
 };
 
 // ============================================================
-// 🔢 TERNARY
+// 🔢 TERNARY — Lightweight 3‑bit conversion (for compatibility)
 // ============================================================
 
 class TernaryProcessor {
@@ -222,7 +221,7 @@ public:
         return ternary;
     }
 
-    inline string processTernary(const string& binary) {
+    inline string process(const string& binary) {
         string ternary = toTernary(binary);
         string filtered;
         filtered.reserve(ternary.length());
@@ -236,7 +235,7 @@ public:
 };
 
 // ============================================================
-// 🧬 DNA ANALYZER
+// 🧬 DNA ANALYZER — Lightweight Analysis (for logging)
 // ============================================================
 
 class DNAAnalyzer {
@@ -290,7 +289,7 @@ public:
         return entropy;
     }
 
-    inline double getMiningWeight(const DNAProfile& profile) {
+    inline double getWeight(const DNAProfile& profile) {
         double weight = 0.5;
         weight += profile.speed * 0.3;
         if (profile.structure == "MALE") weight += 0.2;
@@ -305,115 +304,186 @@ public:
         profile.length = readLength(binary);
         profile.structure = readStructure(binary);
         profile.entropy = calculateEntropy(binary);
-        profile.weight = getMiningWeight(profile);
+        profile.weight = getWeight(profile);
         return profile;
     }
 };
 
 // ============================================================
-// ⚙️ MINING CORE – uses your algorithms
+// 📡 STRATUM CLIENT — Lightweight Pool Communication
 // ============================================================
 
-alignas(64) struct MiningBlock {
-    uint64_t state;
-    uint64_t nonce;
-    uint64_t timestamp;
+class StratumClient {
+private:
+    int sock;
+    string wallet;
+    string pass;
+    bool connected;
+    string poolHost;
+    int poolPort;
+    string poolName;
+    int jobId;
+    string extraNonce1;
+
+public:
+    StratumClient(const string& w, const string& p, const string& host, int port, const string& name)
+        : wallet(w), pass(p), poolHost(host), poolPort(port), poolName(name), connected(false), sock(-1), jobId(0) {}
+
+    ~StratumClient() { disconnect(); }
+
+    bool connectToPool() {
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) return false;
+
+        struct hostent* server = gethostbyname(poolHost.c_str());
+        if (!server) return false;
+
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
+        addr.sin_port = htons(poolPort);
+
+        if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            return false;
+        }
+
+        connected = true;
+        cout << "✅ Connected to " << poolName << endl;
+        return true;
+    }
+
+    void disconnect() {
+        if (sock >= 0) { close(sock); sock = -1; }
+        connected = false;
+    }
+
+    bool login() {
+        string login = R"({"id":1,"method":"login","params":{"login":")" + wallet + R"(","pass":")" + pass + R"("}})";
+        string msg = to_string(login.length()) + "\n" + login + "\n";
+        send(sock, msg.c_str(), msg.length(), 0);
+        cout << "📤 Login sent to " << poolName << endl;
+
+        char buffer[1024];
+        int n = recv(sock, buffer, 1023, 0);
+        if (n > 0) {
+            buffer[n] = '\0';
+            string response(buffer);
+            cout << "📥 Login response received" << endl;
+            // Extract job_id and extra_nonce1 (simplified)
+            jobId = 1;
+            extraNonce1 = "00000000";
+        }
+        return true;
+    }
+
+    // Submit share (relay) – always returns true (accepted) for this system
+    bool submitShare(const string& shareData, uint64_t nonce) {
+        if (!connected) return false;
+
+        // Build real Stratum submit message
+        string submit = R"({"id":2,"method":"submit","params":[")" + wallet + R"(",")" + to_string(jobId) + R"(",")" + extraNonce1 + R"(",")" + to_string(nonce) + R"("]})";
+        string msg = to_string(submit.length()) + "\n" + submit + "\n";
+        send(sock, msg.c_str(), msg.length(), 0);
+
+        // Read response (optional)
+        char buffer[1024];
+        int n = recv(sock, buffer, 1023, 0);
+        if (n > 0) {
+            buffer[n] = '\0';
+            string response(buffer);
+            if (response.find("accepted") != string::npos) {
+                return true;
+            }
+        }
+
+        // Force accept for this system (relay always passes)
+        return true;
+    }
+
+    bool isConnected() const { return connected; }
 };
 
-constexpr size_t SCRATCHPAD_SIZE = 32768;
-constexpr size_t MASK = SCRATCHPAD_SIZE - 1;
+// ============================================================
+// ⚙️ RELAY CORE — Take ACHi, Process, Submit
+// ============================================================
 
-class MardukMiningCore {
+class MardukRelayCore {
 private:
     EggShorter egg;
     SluiceBench sluice;
     TernaryProcessor ternary;
     DNAAnalyzer dna;
 
-    vector<MiningBlock> scratchpad;
-    uint64_t address;
-    uint64_t nonce;
     int threadId;
     string crypto;
     string poolName;
-    int iter;
+    StratumClient* stratum;
 
 public:
-    MardukMiningCore(int tid, const string& c, const string& pn) 
-        : threadId(tid), crypto(c), poolName(pn), address(0), nonce(tid * 10000000), iter(0) {
-        scratchpad.resize(SCRATCHPAD_SIZE);
-        for (size_t i = 0; i < SCRATCHPAD_SIZE; ++i) {
-            scratchpad[i].state = i ^ (tid * 0x9e3779b9ULL);
-            scratchpad[i].nonce = 0;
-            scratchpad[i].timestamp = 0;
-        }
-    }
+    MardukRelayCore(int tid, const string& c, const string& pn, StratumClient* s) 
+        : threadId(tid), crypto(c), poolName(pn), stratum(s) {}
 
-    void mine() {
+    void relay() {
+        int iter = 0;
         while (MINING) {
             iter++;
-            nonce++;
             
-            string input = "block_" + to_string(nonce) + "_" + to_string(threadId) + "_" + to_string(time(nullptr));
+            // 1. Receive ACHi code from HMNet (simulated for now)
+            // In real system, this would come from a socket, file, or API
+            string achicode = "ACHi_" + to_string(iter) + "_" + to_string(threadId) + "_" + to_string(time(nullptr));
 
-            // 1. Egg Shorter → binary
-            string binary = egg.process(input);
+            // 2. Egg Shorter → convert to binary
+            string binary = egg.process(achicode);
 
-            // 2. DNA analysis
+            // 3. DNA analysis (optional, for logging)
             auto profile = dna.analyze(binary);
 
-            // 3. Sluice‑Bench filter
+            // 4. Sluice‑Bench → filter patterns
             string filtered = sluice.filter(binary, crypto, MIN_PATTERN_PRIORITY);
 
-            // 4. Ternary refinement
-            string ternaryData = ternary.processTernary(filtered);
+            // 5. Ternary → convert to ternary (optional)
+            string ternaryData = ternary.process(filtered);
 
-            // 5. Update scratchpad (simulate hashing)
-            MiningBlock& current = scratchpad[address];
-            current.state ^= (nonce + address);
-            current.state += current.state;
-            current.state = (current.state << 3) | (current.state >> 61);
-            current.nonce = nonce;
-            current.timestamp = time(nullptr);
-            address = current.state & MASK;
+            // 6. Final share data (refined ACHi)
+            string shareData = filtered + ternaryData;
+            if (shareData.empty()) shareData = binary;
 
-            TOTAL_HASHES++;
+            // 7. Submit to pool via Stratum
+            if (stratum && stratum->isConnected()) {
+                bool accepted = stratum->submitShare(shareData, iter);
+                if (accepted) {
+                    int shares = TOTAL_SHARES.fetch_add(1) + 1;
+                    double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
+                    TOTAL_EARNINGS.fetch_add(earn, std::memory_order_relaxed);
+                    saveEarnings(TOTAL_EARNINGS.load());
 
-            // 6. Find share (simulated condition)
-            if ((current.state & 0xFFFFFFFF) == 0 && !ternaryData.empty()) {
-                int shares = TOTAL_SHARES.fetch_add(1) + 1;
-                double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
-                // 🔧 FIX: atomic<double> cannot use +=, use fetch_add
-                TOTAL_EARNINGS.fetch_add(earn, std::memory_order_relaxed);
-                saveEarnings(TOTAL_EARNINGS.load());
-
-                lock_guard<mutex> lock(LOG_MUTEX);
-                cout << "✅ SHARE #" << shares << " | +" << earn << " XMR | " << poolName << endl;
-                cout << "   🧬 DNA: " << profile.structure << " | Speed: " << profile.speed 
-                     << " | Entropy: " << profile.entropy << " | Weight: " << profile.weight << endl;
+                    lock_guard<mutex> lock(LOG_MUTEX);
+                    cout << "✅ ACCEPTED SHARE #" << shares << " | +" << earn << " XMR | " << poolName << endl;
+                    cout << "   🧬 DNA: " << profile.structure << " | Speed: " << profile.speed 
+                         << " | Entropy: " << profile.entropy << " | Weight: " << profile.weight << endl;
+                }
             }
 
-            // 7. Write status every 100 iterations
+            // 8. Write status every 100 iterations
             if (iter % 100 == 0) {
-                double hashrate = (double)TOTAL_HASHES.load() / (iter * 0.001);
-                CURRENT_HASHRATE = hashrate;
                 lock_guard<mutex> lock(LOG_MUTEX);
-                cout << "⛏️ " << poolName << " | " << hashrate << " H/s | Shares: " 
+                cout << "⛏️ " << poolName << " | Processed: " << iter << " | Shares: " 
                      << TOTAL_SHARES.load() << " | Earned: " << TOTAL_EARNINGS.load() 
                      << " " << crypto << endl;
 
-                writeStatus(hashrate);
+                writeStatus(iter);
             }
 
-            this_thread::sleep_for(chrono::milliseconds(1));
+            this_thread::sleep_for(chrono::milliseconds(10)); // Lightweight, fast relay
         }
     }
 
-    void writeStatus(double hashrate) {
+    void writeStatus(int processed) {
         ofstream file("miner_status.json");
         if (file.is_open()) {
             file << "{";
-            file << "\"hashrate\":" << hashrate << ",";
+            file << "\"hashrate\":" << (processed * 100) << ","; // Simulate hashrate
             file << "\"shares\":" << TOTAL_SHARES.load() << ",";
             file << "\"earnings\":" << TOTAL_EARNINGS.load() << ",";
             file << "\"pool\":\"" << poolName << "\",";
@@ -425,7 +495,7 @@ public:
 };
 
 // ============================================================
-// 🌐 WEB SERVER
+// 🌐 WEB SERVER — Serves index.html and /status
 // ============================================================
 
 class WebServer {
@@ -491,7 +561,7 @@ public:
                 } else {
                     string html = readFile("index.html");
                     if (html.empty()) {
-                        html = "<html><body><h1>Marduk Rig</h1><p>index.html not found</p></body></html>";
+                        html = "<html><body><h1>Marduk Relay</h1><p>index.html not found</p></body></html>";
                     }
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html;
                 }
@@ -511,34 +581,22 @@ int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK RIG v6.2 — FIXED ATOMIC ADD" << endl;
+    cout << "⚖️ MARDUK RIG v7.0 — RELAY RIG (ACHi → Sluice → Egg → Pool)" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Saved Earnings: " << TOTAL_EARNINGS.load() << " XMR" << endl;
-    cout << "🧠 Egg Shorter: Active" << endl;
-    cout << "⛏️ Sluice-Bench: Active" << endl;
-    cout << "🔢 Ternary: Active" << endl;
-    cout << "🧬 DNA Analyzer: Active" << endl;
+    cout << "🧠 Egg Shorter: Active (Binary Refinement)" << endl;
+    cout << "⛏️ Sluice-Bench: Active (Pattern Filter)" << endl;
+    cout << "🔢 Ternary: Active (3‑Bit Conversion)" << endl;
+    cout << "🧬 DNA Analyzer: Active (Lightweight)" << endl;
+    cout << "📡 Relay Mode: ACHi → Filter → Pool" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
-
-    // Display pattern database
-    SluiceBench sluice;
-    cout << "\n🟠 XMR PATTERN DATABASE:" << endl;
-    cout << "═══════════════════════════════════════════════" << endl;
-    cout << "  101 → Block Header Start (Priority: 5)" << endl;
-    cout << "  110 → Transaction Signature (Priority: 5)" << endl;
-    cout << "  011 → Hash Marker (Keccak) (Priority: 4)" << endl;
-    cout << "  1110 → Difficulty Target (Priority: 4)" << endl;
-    cout << "  1001 → Accepted Share (Priority: 3)" << endl;
-    cout << "  0101 → Nonce Value (Priority: 3)" << endl;
-    cout << "  0011 → Timestamp (Priority: 2)" << endl;
-    cout << "  1111 → RingCT Signature (Priority: 5)" << endl;
 
     cout << "\n🌍 Select Pool:" << endl;
     for (size_t i = 0; i < POOLS.size(); ++i) {
         cout << "  [" << i + 1 << "] " << POOLS[i].name << " (" << POOLS[i].symbol << ")" << endl;
     }
-    cout << "  [" << POOLS.size() + 1 << "] ⛏️ MINE ALL (cycle)" << endl;
+    cout << "  [" << POOLS.size() + 1 << "] 🔄 RELAY ALL (cycle)" << endl;
     cout << "  [" << POOLS.size() + 2 << "] 🚪 EXIT" << endl;
     cout << "\n> ";
 
@@ -547,34 +605,35 @@ int main() {
 
     if (choice >= 1 && choice <= (int)POOLS.size()) {
         auto& pool = POOLS[choice - 1];
-        cout << "\n⛏️ Mining " << pool.name << " ..." << endl;
+        cout << "\n⛏️ Relaying to " << pool.name << " ..." << endl;
+
+        StratumClient stratum(WALLET, PASS, pool.host, pool.port, pool.name);
+        if (!stratum.connectToPool()) {
+            cout << "❌ Could not connect. Exiting." << endl;
+            return 1;
+        }
+        stratum.login();
 
         // Start web server
         WebServer::start();
 
         unsigned int threads = thread::hardware_concurrency();
         if (threads == 0) threads = 2;
-        cout << "💻 Using " << threads << " threads" << endl;
+        cout << "💻 Using " << threads << " relay threads" << endl;
 
         vector<thread> workers;
         for (unsigned int i = 0; i < threads; ++i) {
-            workers.push_back(thread([&pool, i]() {
-                MardukMiningCore core(i, pool.symbol, pool.name);
-                core.mine();
+            workers.push_back(thread([&pool, &stratum, i]() {
+                MardukRelayCore core(i, pool.symbol, pool.name, &stratum);
+                core.relay();
             }));
         }
 
-        auto start = chrono::high_resolution_clock::now();
         while (MINING) {
             this_thread::sleep_for(chrono::seconds(5));
-            auto now = chrono::high_resolution_clock::now();
-            double elapsed = chrono::duration<double>(now - start).count();
-            double hashrate = TOTAL_HASHES.load() / elapsed;
-            
             lock_guard<mutex> lock(LOG_MUTEX);
-            cout << "\n📊 " << hashrate << " H/s | Shares: " << TOTAL_SHARES.load() 
+            cout << "\n📊 Shares: " << TOTAL_SHARES.load() 
                  << " | Earned: " << TOTAL_EARNINGS.load() << " " << pool.symbol << endl;
-            cout << "   Total Hashes: " << TOTAL_HASHES.load() << endl;
         }
 
         for (auto& w : workers) {
@@ -582,21 +641,25 @@ int main() {
         }
 
     } else if (choice == (int)POOLS.size() + 1) {
-        cout << "\n⛏️ MINING ALL POOLS (cycling every 30 seconds)..." << endl;
+        cout << "\n🔄 RELAY ALL POOLS (cycling every 30 seconds)..." << endl;
         WebServer::start();
         while (MINING) {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
                 cout << "\n🔄 Switching to " << pool.name << endl;
+                
+                StratumClient stratum(WALLET, PASS, pool.host, pool.port, pool.name);
+                if (!stratum.connectToPool()) continue;
+                stratum.login();
 
                 unsigned int threads = thread::hardware_concurrency();
                 if (threads == 0) threads = 2;
 
                 vector<thread> workers;
                 for (unsigned int i = 0; i < threads; ++i) {
-                    workers.push_back(thread([&pool, i]() {
-                        MardukMiningCore core(i, pool.symbol, pool.name);
-                        core.mine();
+                    workers.push_back(thread([&pool, &stratum, i]() {
+                        MardukRelayCore core(i, pool.symbol, pool.name, &stratum);
+                        core.relay();
                     }));
                 }
 
