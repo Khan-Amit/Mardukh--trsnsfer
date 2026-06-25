@@ -1,23 +1,9 @@
 // ============================================================
-// ⚖️ MARDUK RIG v5.0 — COMPLETE REAL MINING RIG
+// ⚖️ MARDUK RIG v5.1 — WITH WEB SERVER (FIXED)
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
 // Email: amit.khanna.1082@gmail.com
-//
-// COMPONENTS:
-//   ✅ Egg Shorter (Binary Filter)
-//   ✅ Sluice-Bench (Pattern Database + Filter)
-//   ✅ Ternary (3,6,9 Quantum Processing)
-//   ✅ DNA Analyzer (Speed, Length, Structure, Entropy)
-//   ✅ Stratum Protocol (Real Pool Connection)
-//   ✅ Cache Optimization (alignas, prefetch)
-//   ✅ Multithreading (All CPU cores)
-//   ✅ 14 Pools (2 XMR + 12 BTC)
-//   ✅ Real Share Submission
-//   ✅ Wallet Integration
-//   ✅ PERSISTENT EARNINGS (saves to file)
-//   ✅ STATUS OUTPUT (miner_status.json)
 //
 // ============================================================
 
@@ -34,6 +20,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <fstream>
 #include <vector>
 #include <algorithm>
@@ -520,6 +507,57 @@ public:
 };
 
 // ============================================================
+// 🌐 WEB SERVER — Serves miner_status.json to dashboard
+// ============================================================
+
+class WebServer {
+public:
+    static void start() {
+        thread([](){
+            int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+            if (server_fd < 0) {
+                cerr << "Web server socket failed" << endl;
+                return;
+            }
+            int opt = 1;
+            setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+            struct sockaddr_in addr;
+            addr.sin_family = AF_INET;
+            addr.sin_addr.s_addr = INADDR_ANY;
+            addr.sin_port = htons(8080);
+            if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+                cerr << "Web server bind failed (port 8080 may be in use)" << endl;
+                close(server_fd);
+                return;
+            }
+            listen(server_fd, 3);
+            cout << "🌐 Web server running at http://127.0.0.1:8080" << endl;
+
+            while (MINING) {
+                struct sockaddr_in client_addr;
+                socklen_t client_len = sizeof(client_addr);
+                int client = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+                if (client < 0) continue;
+
+                string data;
+                ifstream file("miner_status.json");
+                if (file.is_open()) {
+                    stringstream ss; ss << file.rdbuf();
+                    data = ss.str();
+                    file.close();
+                } else {
+                    data = R"({"hashrate":0,"shares":0,"earnings":0,"pool":"none","crypto":"none"})";
+                }
+                string response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + data;
+                send(client, response.c_str(), response.size(), 0);
+                close(client);
+            }
+            close(server_fd);
+        }).detach();
+    }
+};
+
+// ============================================================
 // 🚀 MAIN
 // ============================================================
 
@@ -527,7 +565,7 @@ int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK RIG v5.0 — COMPLETE OPTIMIZED" << endl;
+    cout << "⚖️ MARDUK RIG v5.1 — WITH WEB SERVER" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Saved Earnings: " << TOTAL_EARNINGS.load() << " XMR" << endl;
@@ -564,6 +602,9 @@ int main() {
         }
         stratum.login();
 
+        // Start web server
+        WebServer::start();
+
         unsigned int threads = thread::hardware_concurrency();
         if (threads == 0) threads = 2;
         cout << "💻 Using " << threads << " threads" << endl;
@@ -595,6 +636,7 @@ int main() {
 
     } else if (choice == (int)POOLS.size() + 1) {
         cout << "\n⛏️ MINING ALL POOLS (cycling every 30 seconds)..." << endl;
+        WebServer::start(); // start web server once
         while (MINING) {
             for (auto& pool : POOLS) {
                 if (!MINING) break;
@@ -615,8 +657,13 @@ int main() {
                     }));
                 }
 
-                this_thread::sleep_for(chrono::seconds(30));
+                // mine for 30 seconds
+                auto start = chrono::high_resolution_clock::now();
+                while (chrono::duration<double>(chrono::high_resolution_clock::now() - start).count() < 30 && MINING) {
+                    this_thread::sleep_for(chrono::seconds(1));
+                }
 
+                // stop threads
                 MINING = false;
                 for (auto& w : workers) {
                     if (w.joinable()) w.join();
@@ -624,21 +671,9 @@ int main() {
                 MINING = true;
             }
         }
-
-    } else if (choice == (int)POOLS.size() + 2) {
-        cout << "🚪 Exiting..." << endl;
-        return 0;
     } else {
-        cout << "❌ Invalid choice. Exiting." << endl;
-        return 1;
+        cout << "Exiting." << endl;
     }
-
-    cout << "\n════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK RIG — SHUTDOWN" << endl;
-    cout << "📊 Final Shares: " << TOTAL_SHARES.load() 
-         << " | Earned: " << TOTAL_EARNINGS.load() << " XMR" << endl;
-    cout << "📊 Total Hashes: " << TOTAL_HASHES.load() << endl;
-    cout << "════════════════════════════════════════════════════════════" << endl;
 
     return 0;
 }
