@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marduk · Real Rig + ATM</title>
+    <title>Marduk · Secure Rig</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -39,6 +39,111 @@
         .header .sub { color: #8da0c0; font-size: 0.8rem; }
         .header .time { color: #8da0c0; font-size: 0.8rem; }
 
+        /* Password Overlay */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .password-overlay.hidden { display: none; }
+        .password-box {
+            background: #0f1322;
+            border: 2px solid #ffcc00;
+            border-radius: 2rem;
+            padding: 3rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .password-box h2 { color: #ffcc00; margin-bottom: 1rem; }
+        .password-box p { color: #8da0c0; margin-bottom: 1rem; }
+        .password-box input {
+            background: #010410;
+            border: 1px solid #2a3a60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 2rem;
+            width: 100%;
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 1rem 0;
+            font-family: monospace;
+            letter-spacing: 4px;
+        }
+        .password-box input:focus { outline: none; border-color: #ffcc00; }
+        .password-box .error { color: #ff6666; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
+        .password-box .error.show { display: block; }
+        .password-box button {
+            background: #2a4a7a;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 2rem;
+            width: 100%;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .password-box button:hover { opacity: 0.8; }
+        .password-box .settings-link {
+            color: #4a8afc;
+            font-size: 0.7rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+        .password-box .settings-link:hover { color: #66ccff; }
+
+        /* Settings Panel */
+        .settings-panel {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #010410;
+            border-radius: 1rem;
+            border: 1px solid #1a2a4a;
+            display: none;
+        }
+        .settings-panel.open { display: block; }
+        .settings-panel label { color: #8da0c0; font-size: 0.6rem; text-transform: uppercase; display: block; margin-top: 0.5rem; }
+        .settings-panel input {
+            background: #0a0e1a;
+            border: 1px solid #2a3a60;
+            color: #88ffaa;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            width: 100%;
+            font-family: monospace;
+        }
+        .settings-panel .btn-small {
+            background: #2a4a7a;
+            color: white;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            font-family: monospace;
+        }
+        .settings-panel .btn-small:hover { opacity: 0.8; }
+        .settings-panel .btn-danger-small {
+            background: #6a2a2a;
+            color: white;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            font-family: monospace;
+        }
+        .settings-panel .btn-danger-small:hover { opacity: 0.8; }
+
         .wallet-box {
             background: #010410;
             border-radius: 0.8rem;
@@ -48,17 +153,8 @@
             line-height: 1.6;
         }
         .wallet-box .wallet-label { color: #ffcc00; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
-        .wallet-box .wallet-address {
-            color: #88ffaa;
-            font-size: 0.7rem;
-            word-break: break-all;
-            margin: 0.3rem 0;
-        }
-        .wallet-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
+        .wallet-box .wallet-address { color: #88ffaa; font-size: 0.7rem; word-break: break-all; margin: 0.3rem 0; }
+        .wallet-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .wallet-actions .btn-small {
             background: #0a0e1a;
             border: 1px solid #1a2a4a;
@@ -90,13 +186,6 @@
         .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .balance-item .value { color: #88ffaa; font-size: 1rem; font-weight: bold; margin-top: 0.2rem; }
         .balance-item .value.xmr { color: #ff6633; }
-        .balance-item .value.btc { color: #f7931a; }
-        .balance-item .value.bch { color: #8dc351; }
-        .balance-item .value.usdt { color: #26a17b; }
-        .balance-item .value.doge { color: #c2a633; }
-        .balance-item .value.ltc { color: #a5a5a5; }
-        .balance-item .value.eth { color: #627eea; }
-        .balance-item .value.thb { color: #88ff88; }
 
         .pool-select {
             background: #010410;
@@ -111,8 +200,6 @@
             margin-bottom: 0.5rem;
         }
         .pool-select:focus { border-color: #ffcc00; }
-        .pool-select optgroup { color: #ffcc00; font-style: normal; }
-        .pool-select option { color: #88ffaa; }
 
         .btn-group {
             display: flex;
@@ -238,6 +325,7 @@
         .rig-log .rejected { color: #ff6666; }
         .rig-log .info { color: #66ccff; }
         .rig-log .send { color: #ffcc00; }
+        .rig-log .error { color: #ff4444; }
 
         .footer {
             text-align: center;
@@ -292,6 +380,27 @@
 </head>
 <body>
 
+<!-- PASSWORD OVERLAY -->
+<div class="password-overlay" id="passwordOverlay">
+    <div class="password-box">
+        <h2>🔐 MARDUK ATM</h2>
+        <p style="color:#8da0c0;">Enter PIN to unlock</p>
+        <input type="password" id="pinInput" maxlength="6" placeholder="••••••" autofocus>
+        <button id="unlockBtn">🔓 UNLOCK</button>
+        <div class="error" id="pinError">❌ Invalid PIN</div>
+        <div class="hint" style="color:#4a5a6a; font-size:0.7rem; margin-top:0.5rem;">Hint: 197328</div>
+        <span class="settings-link" onclick="toggleSettings()">⚙️ Settings</span>
+
+        <div class="settings-panel" id="settingsPanel">
+            <label>Change PIN</label>
+            <input type="password" id="newPinInput" maxlength="6" placeholder="New PIN (6 digits)">
+            <button class="btn-small" onclick="changePin()">Update PIN</button>
+            <button class="btn-danger-small" onclick="disableSharing()">🔒 Stop Sharing</button>
+            <div style="color:#4a5a6a; font-size:0.6rem; margin-top:0.5rem;">"Stop Sharing" removes public access. Anyone who opens this page will see a lock screen. You can re-enable by refreshing and entering your PIN.</div>
+        </div>
+    </div>
+</div>
+
 <!-- ATM POPUP -->
 <div class="atm-overlay" id="atmOverlay">
     <div class="atm-box">
@@ -307,28 +416,25 @@
     </div>
 </div>
 
-<div class="container">
+<!-- MAIN APP -->
+<div class="container" id="mainApp" style="display:none;">
     <div class="header">
         <div>
-            <span class="title">⚖️ MARDUK · REAL RIG + ATM</span>
-            <span class="sub">Real Data from Your Running Rig</span>
+            <span class="title">⚖️ MARDUK · SECURE RIG</span>
+            <span class="sub" id="connectionStatus">🔴 Rig Offline</span>
         </div>
         <div class="time" id="headerTime">--:--:--</div>
     </div>
 
-    <!-- Wallet -->
     <div class="wallet-box">
         <div class="wallet-label">📬 Your Monero Wallet</div>
-        <div class="wallet-address">
-            45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
-        </div>
+        <div class="wallet-address">45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb</div>
         <div class="wallet-actions">
             <button class="btn-small" onclick="copyWallet()">📋 COPY</button>
             <button class="btn-small" onclick="window.open('https://xmrchain.net/address/45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb','_blank')">🔗 VIEW</button>
         </div>
     </div>
 
-    <!-- Balances -->
     <div class="balance-grid">
         <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
         <div class="balance-item"><div class="label">📊 Shares</div><div class="value" id="shareDisplay">0</div></div>
@@ -336,7 +442,6 @@
         <div class="balance-item"><div class="label">🚫 Rejected</div><div class="value" id="rejectedDisplay" style="color:#ff6666;">0</div></div>
     </div>
 
-    <!-- Pool Selector -->
     <div style="margin-bottom:1rem;">
         <label style="font-size:0.65rem;color:#4a5a6a;">⛏️ Select Mining Pool</label>
         <select class="pool-select" id="poolSelect">
@@ -361,7 +466,6 @@
         </select>
     </div>
 
-    <!-- SEND / RECEIVE / PAY -->
     <div class="transfer-section">
         <h2 style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">💸 SEND / RECEIVE / PAY</h2>
         <div class="transfer-row">
@@ -380,15 +484,11 @@
         <div class="transfer-status" id="transferStatus">⏳ Ready</div>
     </div>
 
-    <!-- Buttons -->
     <div class="btn-group">
         <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
         <button class="btn success" onclick="copyWallet()">📋 COPY</button>
-        <button class="btn gold" onclick="startRig()">▶ START RIG (SIM)</button>
-        <button class="btn danger" id="stopBtn" onclick="stopRig()" style="display:none;">⏹ STOP RIG</button>
     </div>
 
-    <!-- X-SA Counter -->
     <div class="counter-section">
         <div style="color:#8da0c0;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;">🔄 X-SA COUNTER</div>
         <div class="counter-number" id="xsaDisplay">X-SA-000</div>
@@ -400,10 +500,9 @@
         </div>
     </div>
 
-    <!-- Log -->
     <div class="rig-log" id="rigLog">
-        ⚖️ Marduk Full Rig · Waiting for data...<br>
-        🔄 Click "FETCH REAL" to get data from your running rig.
+        ⚖️ Secure Rig · Waiting for data...<br>
+        🔄 Click "FETCH REAL" to get real data from your running rig.
     </div>
 
     <div class="footer">
@@ -413,15 +512,71 @@
 
 <script>
 // ============================================================
-// MARDUK FULL RIG + ATM — Real Data from C++ Rig
+// SECURE RIG — Password + No Simulation
 // ============================================================
 
 const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
 const RIG_URL = "http://127.0.0.1:8080/status";
 
 let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0, sent = 0;
-let rigRunning = false;
-let simInterval = null;
+let currentPin = "197328";
+
+// ============================================================
+// PASSWORD
+// ============================================================
+function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    panel.classList.toggle('open');
+}
+
+function changePin() {
+    const input = document.getElementById('newPinInput');
+    const newPin = input.value.trim();
+    if (newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+        alert('PIN must be exactly 6 digits.');
+        return;
+    }
+    currentPin = newPin;
+    localStorage.setItem('marduk_pin', currentPin);
+    document.getElementById('pinInput').value = '';
+    input.value = '';
+    alert('PIN changed successfully.');
+    document.getElementById('settingsPanel').classList.remove('open');
+}
+
+function disableSharing() {
+    if (!confirm('Are you sure? This will lock the dashboard for anyone who opens it.')) return;
+    localStorage.setItem('marduk_locked', 'true');
+    alert('Sharing disabled. The dashboard is now locked for public access. Refreshing will show the lock screen. You can re-enter your PIN to unlock.');
+    location.reload();
+}
+
+// ============================================================
+// UNLOCK
+// ============================================================
+document.getElementById('unlockBtn').addEventListener('click', function() {
+    const input = document.getElementById('pinInput');
+    if (input.value === currentPin) {
+        document.getElementById('passwordOverlay').classList.add('hidden');
+        document.getElementById('mainApp').style.display = 'block';
+        initApp();
+    } else {
+        document.getElementById('pinError').classList.add('show');
+        input.value = '';
+        input.focus();
+    }
+});
+document.getElementById('pinInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('unlockBtn').click();
+});
+
+// Check if locked
+const storedPin = localStorage.getItem('marduk_pin');
+if (storedPin) currentPin = storedPin;
+if (localStorage.getItem('marduk_locked') === 'true') {
+    document.getElementById('passwordOverlay').classList.remove('hidden');
+    document.getElementById('mainApp').style.display = 'none';
+}
 
 // ============================================================
 // LOGGING
@@ -430,11 +585,15 @@ function addLog(msg, type = 'info') {
     const container = document.getElementById('rigLog');
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
-    let icon = 'ℹ️';
-    if (type === 'accepted') icon = '✅';
-    else if (type === 'rejected') icon = '🚫';
-    else if (type === 'send') icon = '📤';
-    else if (type === 'pool') icon = '🌐';
+    const iconMap = {
+        'accepted': '✅',
+        'rejected': '🚫',
+        'send': '📤',
+        'error': '⚠️',
+        'pool': '🌐',
+        'info': 'ℹ️'
+    };
+    const icon = iconMap[type] || 'ℹ️';
     div.textContent = `> ${time} ${icon} ${msg}`;
     div.className = type;
     container.appendChild(div);
@@ -455,7 +614,7 @@ function updateDisplay() {
     document.getElementById('sentCount').textContent = sent;
     document.getElementById('sortedCount').textContent = counter;
     document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3, '0');
-    document.getElementById('transferStatus').textContent = `💰 Real Earnings: ${earned.toFixed(8)} XMR`;
+    document.getElementById('transferStatus').textContent = `💰 Wallet: ${earned.toFixed(8)} XMR`;
 }
 
 // ============================================================
@@ -470,161 +629,47 @@ setInterval(updateClocks, 1000);
 updateClocks();
 
 // ============================================================
-// FETCH REAL DATA FROM RIG
+// FETCH REAL DATA FROM RIG (NO SIMULATION)
 // ============================================================
 async function fetchRealData() {
+    addLog('🔄 Fetching real data from rig...', 'info');
     try {
         const response = await fetch(RIG_URL);
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
 
-        // Update with real rig data
+        // Update stats from rig
         shares = data.shares || 0;
         accepted = data.accepted || 0;
         rejected = data.rejected || 0;
         counter = data.counter || 0;
         sent = data.sent || 0;
 
-        // READ REAL POOL RESPONSE AND REAL EARNINGS
+        // Read REAL pool response
         const poolResponse = data.pool_response || 'unknown';
         const realEarnings = data.real_earnings || 0;
-
-        // Update earned with REAL earnings from pool
         earned = realEarnings;
 
-        // Show real pool response in log
+        // Show real pool response
         if (poolResponse === 'accepted') {
             addLog(`✅ REAL POOL: Accepted share`, 'accepted');
+            document.getElementById('connectionStatus').textContent = '🟢 Connected to Rig (Pool: Accepting)';
         } else if (poolResponse === 'rejected') {
             addLog(`❌ REAL POOL: Rejected share`, 'rejected');
+            document.getElementById('connectionStatus').textContent = '🟡 Connected to Rig (Pool: Rejecting)';
         } else {
-            addLog(`⚠️ Pool response: ${poolResponse}`, 'info');
+            addLog(`⚠️ Pool response: ${poolResponse}`, 'error');
+            document.getElementById('connectionStatus').textContent = '🟡 Connected to Rig (Unknown Pool Status)';
         }
 
-        addLog(`📊 Real earnings: ${earned.toFixed(8)} XMR`, 'accepted');
+        addLog(`💰 Real earnings: ${earned.toFixed(8)} XMR`, 'accepted');
         updateDisplay();
-        document.querySelector('.header .sub').textContent = '🟢 Connected to Rig (Real Data)';
 
     } catch (e) {
-        addLog(`❌ Rig not reachable. Using simulation.`, 'rejected');
-        document.querySelector('.header .sub').textContent = '🔴 Rig Offline (Simulation)';
+        addLog(`🚨 RIG OFFLINE: ${e.message}`, 'error');
+        document.getElementById('connectionStatus').textContent = '🔴 Rig Offline (No Connection)';
+        // DO NOT fall back to simulation. Show error and stop.
     }
-}
-
-// ============================================================
-// SIMULATION MODE (fallback)
-// ============================================================
-const dataStream = [
-    "BLOCK_12345", "TX_ABCDEF", "MINER_001", "HASH_7890",
-    "DATA_2025", "SYSTEM_INIT_ERR", "PING_OK", "DATA_CHUNK_A",
-    "AUTH_FAIL_RETRY", "SYS_REBOOT", "MEMPOOL_TX", "BLOCK_HEADER",
-    "TRANSACTION_001", "MERKLE_ROOT", "NONCE_123", "DIFFICULTY_456"
-];
-let streamIndex = 0;
-
-function hasXMRPattern(binary) {
-    const patterns = ['101','110','011','1110','1001','0101','0011','1111'];
-    return patterns.some(p => binary.includes(p));
-}
-function hasBTCPattern(binary) {
-    const patterns = ['010','001','111','1010','0101','1100','0010','1001','0110'];
-    return patterns.some(p => binary.includes(p));
-}
-function toBinary(input) {
-    let bin = '';
-    for (let i=0; i<input.length; i++) {
-        let c = input.charCodeAt(i);
-        for (let j=7; j>=0; j--) bin += (c & (1<<j)) ? '1' : '0';
-    }
-    return bin;
-}
-function eggShorter(binary) {
-    let result = '';
-    for (let i=0; i<binary.length; i+=3) {
-        if (i+3 > binary.length) break;
-        let chunk = binary.substring(i, i+3);
-        if (chunk !== '000' && chunk !== '111') result += chunk;
-    }
-    return result;
-}
-function toACHI(washed) {
-    let clean = '';
-    for (let i=0; i<washed.length && clean.length<6; i++) {
-        if (washed[i].match(/[A-Za-z0-9]/)) clean += washed[i];
-    }
-    while (clean.length < 6) clean += '0' + (counter % 10);
-    clean = clean.substring(0, 6);
-    return 'ACHi' + clean;
-}
-
-function processSimData(raw) {
-    if (!raw || !raw.trim()) return;
-    const data = raw.trim();
-    counter++;
-    const num = counter;
-
-    addLog(`📥 #${num}: ${data}`, 'info');
-
-    const binary = toBinary(data);
-    const xmr = hasXMRPattern(binary);
-    const btc = hasBTCPattern(binary);
-
-    if (!xmr && !btc) {
-        rejected++;
-        addLog(`🚫 REJECTED: No patterns`, 'rejected');
-        updateDisplay();
-        return;
-    }
-
-    const crypto = xmr ? 'XMR' : 'BTC';
-    addLog(`🧹 SLUICE-BENCH: ${crypto} patterns`, 'info');
-
-    const washed = eggShorter(binary);
-    if (!washed) {
-        rejected++;
-        addLog(`🚫 REJECTED: Empty after cleaning`, 'rejected');
-        updateDisplay();
-        return;
-    }
-    addLog(`🧹 EGG SHORTER: Cleaned (${washed.length} chars)`, 'info');
-
-    const achicode = toACHI(washed);
-    addLog(`🔢 SHORT: ${achicode}`, 'info');
-
-    addLog(`📤 SEND: Submitted to pool`, 'send');
-    addLog(`✅ SIMULATED POOL: Accepted`, 'accepted');
-
-    const earn = 0.0000000001;
-    earned += earn;
-    shares++;
-    accepted++;
-    sent++;
-    addLog(`💾 SAVE: +${earn.toFixed(10)} XMR (simulated)`, 'accepted');
-    addLog(`🔄 X-SA: X-SA-${String(num).padStart(3,'0')}`, 'info');
-
-    updateDisplay();
-}
-
-function startRig() {
-    if (rigRunning) return;
-    rigRunning = true;
-    document.querySelector('.btn.gold').style.display = 'none';
-    document.getElementById('stopBtn').style.display = 'inline-block';
-    addLog('▶️ SIMULATION STARTED', 'info');
-
-    simInterval = setInterval(() => {
-        if (!rigRunning) return;
-        if (streamIndex >= dataStream.length) streamIndex = 0;
-        processSimData(dataStream[streamIndex++]);
-    }, 2500);
-}
-
-function stopRig() {
-    rigRunning = false;
-    clearInterval(simInterval);
-    document.querySelector('.btn.gold').style.display = 'inline-block';
-    document.getElementById('stopBtn').style.display = 'none';
-    addLog('⏹️ SIMULATION STOPPED', 'info');
 }
 
 // ============================================================
@@ -676,23 +721,31 @@ function copyWallet() {
     });
 }
 
-// Pool selector
 document.getElementById('poolSelect').addEventListener('change', function() {
-    const selected = this.options[this.selectedIndex].text;
-    addLog(`🌐 Pool selected: ${selected}`, 'pool');
+    addLog(`🌐 Pool selected: ${this.options[this.selectedIndex].text}`, 'pool');
 });
 
 // ============================================================
 // INIT
 // ============================================================
-addLog('🚀 Marduk Full Rig + ATM ready', 'info');
-addLog('💡 Click "FETCH REAL" to pull data from your running rig.', 'info');
-addLog('💡 Or click "START RIG (SIM)" for demo mode.', 'info');
-addLog('💡 Select a pool from the dropdown above.', 'info');
-updateDisplay();
+function initApp() {
+    addLog('🚀 Secure Rig ready (no simulation)', 'info');
+    addLog('💡 Click "FETCH REAL" to pull real data from your running rig.', 'info');
+    addLog('💡 Select a pool from the dropdown above.', 'info');
+    updateDisplay();
 
-// Try to fetch real data immediately on load
-setTimeout(fetchRealData, 1000);
+    // Attempt to fetch immediately
+    setTimeout(fetchRealData, 1500);
+    // Then fetch every 10 seconds
+    setInterval(fetchRealData, 10000);
+}
+
+// If not locked, init directly
+if (localStorage.getItem('marduk_locked') !== 'true') {
+    document.getElementById('passwordOverlay').classList.add('hidden');
+    document.getElementById('mainApp').style.display = 'block';
+    initApp();
+}
 </script>
 </body>
 </html>
