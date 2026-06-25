@@ -140,6 +140,7 @@
         .btn.primary { border-color: #ffcc00; color: #ffcc00; }
         .btn.success { border-color: #2a6a3a; color: #88ff88; }
         .btn.gold { border-color: #ffcc00; color: #ffcc00; }
+        .btn.danger { border-color: #8a2a2a; color: #ff6666; }
 
         .transfer-section {
             margin-top: 1rem;
@@ -244,7 +245,6 @@
             .rig-log { min-height: 150px; max-height: 200px; }
         }
 
-        /* Password overlay */
         .password-overlay {
             position: fixed;
             top: 0;
@@ -398,6 +398,7 @@
             <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
             <button class="btn success" onclick="copyWallet()">📋 COPY</button>
             <button class="btn gold" id="startRigBtn">▶ START RIG</button>
+            <button class="btn danger" id="stopRigBtn" style="display:none;">⏹ STOP RIG</button>
         </div>
 
         <!-- RIG ACTIVITY -->
@@ -453,7 +454,7 @@
         // 📡 ATM LOGIC
         // ============================================================
         const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-        const RIG_STATUS_URL = "http://127.0.0.1:8080/miner_status.json";
+        const SERVER_URL = "http://127.0.0.1:8080";
 
         const $ = id => document.getElementById(id);
         const xmrBal = $('xmrBal');
@@ -475,6 +476,8 @@
         const sendAmount = $('sendAmount');
         const qrArea = $('qrArea');
         const poolSelect = $('poolSelect');
+        const startBtn = $('startRigBtn');
+        const stopBtn = $('stopRigBtn');
 
         // ============================================================
         // 🕐 CLOCK
@@ -518,7 +521,7 @@
         async function fetchRealData() {
             addLog('📡 Fetching real rig data...', 'real');
             try {
-                const res = await fetch(RIG_STATUS_URL);
+                const res = await fetch(`${SERVER_URL}/status`);
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
 
@@ -552,25 +555,50 @@
         }
 
         // ============================================================
-        // ▶ START RIG BUTTON
+        // ▶ START RIG
         // ============================================================
-        document.getElementById('startRigBtn').addEventListener('click', function() {
-            addLog('▶ Attempting to start rig...', 'real');
-            // Open the script in a terminal (works on Linux/macOS)
-            // For Windows, we could use a different approach, but let's give instructions.
-            // Option: open a terminal with the command
-            if (navigator.userAgent.indexOf('Win') !== -1) {
-                // Windows
-                alert('Please open Command Prompt and run: run_rig.sh (or run the commands manually)');
-            } else {
-                // macOS/Linux
-                // Try to open a terminal and run the script
-                const cmd = 'gnome-terminal -- bash -c "./run_rig.sh; exec bash" || xterm -e "./run_rig.sh" || osascript -e \'tell app "Terminal" to do script "./run_rig.sh"\'';
-                // We can't guarantee, so just show instructions
-                alert('Please open a terminal and run: ./run_rig.sh');
+        async function startRig() {
+            addLog('▶ Starting rig...', 'real');
+            try {
+                const res = await fetch(`${SERVER_URL}/start`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'started' || data.status === 'already_running') {
+                    addLog('✅ Rig started successfully', 'success');
+                    startBtn.style.display = 'none';
+                    stopBtn.style.display = 'inline-block';
+                    // fetch status after a moment
+                    setTimeout(fetchRealData, 2000);
+                } else {
+                    addLog('❌ ' + data.message, 'error');
+                }
+            } catch (e) {
+                addLog('❌ Error starting rig: ' + e.message, 'error');
             }
-            addLog('📋 Instructions: Run "./run_rig.sh" in a terminal.', 'info');
-        });
+        }
+
+        // ============================================================
+        // ⏹ STOP RIG
+        // ============================================================
+        async function stopRig() {
+            addLog('⏹ Stopping rig...', 'real');
+            try {
+                const res = await fetch(`${SERVER_URL}/stop`, { method: 'POST' });
+                const data = await res.json();
+                if (data.status === 'stopped') {
+                    addLog('✅ Rig stopped', 'success');
+                    startBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'none';
+                } else {
+                    addLog('❌ ' + data.message, 'error');
+                }
+            } catch (e) {
+                addLog('❌ Error stopping rig: ' + e.message, 'error');
+            }
+        }
+
+        // Attach click handlers
+        startBtn.addEventListener('click', startRig);
+        stopBtn.addEventListener('click', stopRig);
 
         // ============================================================
         // 💸 TRANSFER FUNCTIONS
@@ -634,7 +662,7 @@
             addLog('⚖️ Marduk Real Rig v1.0');
             addLog('📡 Waiting for rig data...');
             fetchRealData();
-            setInterval(fetchRealData, 10000);
+            setInterval(fetchRealData, 5000); // check every 5s
 
             poolSelect.addEventListener('change', function() {
                 const pool = this.options[this.selectedIndex].text;
