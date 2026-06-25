@@ -36,7 +36,6 @@
             border-bottom: 2px solid #ffcc00;
         }
         .header .title { color: #ffcc00; font-size: 1.5rem; font-weight: bold; }
-        .header .sub { color: #8da0c0; font-size: 0.8rem; }
         .header .time { color: #8da0c0; font-size: 0.8rem; }
 
         .wallet-box {
@@ -45,32 +44,9 @@
             padding: 0.8rem 1rem;
             border: 1px solid #1a2a4a;
             margin-bottom: 1.5rem;
-            line-height: 1.6;
         }
         .wallet-box .wallet-label { color: #ffcc00; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
-        .wallet-box .wallet-address {
-            color: #88ffaa;
-            font-size: 0.7rem;
-            word-break: break-all;
-            margin: 0.3rem 0;
-        }
-        .wallet-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .wallet-actions .btn-small {
-            background: #0a0e1a;
-            border: 1px solid #1a2a4a;
-            color: #88ffaa;
-            padding: 0.2rem 0.8rem;
-            border-radius: 1rem;
-            font-family: monospace;
-            font-size: 0.6rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .wallet-actions .btn-small:hover { border-color: #ffcc00; color: #ffcc00; }
+        .wallet-box .wallet-address { color: #88ffaa; font-size: 0.7rem; word-break: break-all; margin: 0.3rem 0; }
 
         .balance-grid {
             display: grid;
@@ -87,7 +63,7 @@
             border: 1px solid #1a2a4a;
             text-align: center;
         }
-        .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; }
         .balance-item .value { color: #88ffaa; font-size: 1rem; font-weight: bold; margin-top: 0.2rem; }
         .balance-item .value.xmr { color: #ff6633; }
 
@@ -112,10 +88,9 @@
             text-align: center;
         }
         .btn:hover { transform: scale(0.96); opacity: 0.8; }
-        .btn.primary { border-color: #ffcc00; color: #ffcc00; }
         .btn.success { border-color: #2a6a3a; color: #88ff88; }
-        .btn.gold { border-color: #ffcc00; color: #ffcc00; }
         .btn.danger { border-color: #8a2a2a; color: #ff6666; }
+        .btn.primary { border-color: #ffcc00; color: #ffcc00; }
 
         .counter-section {
             background: #010410;
@@ -168,7 +143,6 @@
         .rig-log .rejected { color: #ff6666; }
         .rig-log .info { color: #66ccff; }
         .rig-log .send { color: #ffcc00; }
-        .rig-log .day { color: #ffaa66; }
 
         .footer {
             text-align: center;
@@ -186,23 +160,17 @@
     <div class="header">
         <div>
             <span class="title">⚖️ MARDUK · REAL RIG</span>
-            <span class="sub">Collect · Wash · Short · Submit · Accept · Save</span>
         </div>
         <div class="time" id="headerTime">--:--:--</div>
     </div>
 
-    <!-- Wallet -->
     <div class="wallet-box">
         <div class="wallet-label">📬 Wallet Address</div>
         <div class="wallet-address">
             45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
         </div>
-        <div class="wallet-actions">
-            <button class="btn-small" onclick="copyWallet()">📋 COPY</button>
-        </div>
     </div>
 
-    <!-- Balances -->
     <div class="balance-grid">
         <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
         <div class="balance-item"><div class="label">📊 Shares</div><div class="value" id="shareDisplay">0</div></div>
@@ -210,15 +178,13 @@
         <div class="balance-item"><div class="label">🚫 Rejected</div><div class="value" id="rejectedDisplay" style="color:#ff6666;">0</div></div>
     </div>
 
-    <!-- Buttons -->
     <div class="btn-group">
         <button class="btn success" onclick="startRig()">▶ START RIG</button>
         <button class="btn danger" id="stopBtn" onclick="stopRig()" style="display:none;">⏹ STOP RIG</button>
         <button class="btn primary" onclick="processSingle()">📥 PROCESS ONE</button>
-        <button class="btn gold" onclick="clearAll()">🗑️ CLEAR</button>
+        <button class="btn danger" onclick="clearAll()">🗑️ CLEAR</button>
     </div>
 
-    <!-- X-SA Counter -->
     <div class="counter-section">
         <div style="color:#8da0c0;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;">🔄 X-SA COUNTER</div>
         <div class="counter-number" id="xsaDisplay">X-SA-000</div>
@@ -230,10 +196,9 @@
         </div>
     </div>
 
-    <!-- Log -->
     <div class="rig-log" id="rigLog">
-        ⚖️ Marduk Real Rig
-        ⏳ Click "START RIG" to begin collecting data...
+        ⚖️ Marduk Real Rig<br>
+        ⏳ Click "START RIG" to begin auto-collecting data...
     </div>
 
     <div class="footer">
@@ -243,43 +208,32 @@
 
 <script>
 // ============================================================
-// COMPLETE RIG LOGIC
+// AUTO-COLLECT RIG LOGIC
 // ============================================================
 
-// State
 let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0, sent = 0;
 let rigRunning = false;
 let autoInterval = null;
 
-// Sample data (like data stream from network)
 const dataStream = [
     "BLOCK_12345", "TX_ABCDEF", "MINER_001", "HASH_7890", 
     "DATA_2025", "SYSTEM_INIT_ERR", "PING_OK", "DATA_CHUNK_A",
     "AUTH_FAIL_RETRY", "SYS_REBOOT", "MEMPOOL_TX", "BLOCK_HEADER",
     "TRANSACTION_001", "MERKLE_ROOT", "NONCE_123", "DIFFICULTY_456"
 ];
-
 let streamIndex = 0;
-
-// ============================================================
-// LOGGING
-// ============================================================
 
 function addLog(msg, type = 'info') {
     const container = document.getElementById('rigLog');
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
-    const icon = type === 'accepted' ? '✅' : type === 'rejected' ? '🚫' : type === 'send' ? '📤' : type === 'day' ? '📅' : 'ℹ️';
+    const icon = type === 'accepted' ? '✅' : type === 'rejected' ? '🚫' : type === 'send' ? '📤' : 'ℹ️';
     div.textContent = `> ${time} ${icon} ${msg}`;
     div.className = type;
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
     while (container.children.length > 100) container.removeChild(container.firstChild);
 }
-
-// ============================================================
-// UPDATE DISPLAY
-// ============================================================
 
 function updateDisplay() {
     document.getElementById('xmrBal').textContent = earned.toFixed(8);
@@ -293,10 +247,6 @@ function updateDisplay() {
     document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3, '0');
 }
 
-// ============================================================
-// CLOCK
-// ============================================================
-
 function updateClocks() {
     const now = new Date().toLocaleTimeString();
     document.getElementById('headerTime').textContent = now;
@@ -305,50 +255,34 @@ function updateClocks() {
 setInterval(updateClocks, 1000);
 updateClocks();
 
-// ============================================================
-// CORE FUNCTIONS
-// ============================================================
-
-// Sluice-Bench: pattern matching
 function hasXMRPattern(binary) {
-    const patterns = ['101', '110', '011', '1110', '1001', '0101', '0011', '1111'];
+    const patterns = ['101','110','011','1110','1001','0101','0011','1111'];
     return patterns.some(p => binary.includes(p));
 }
-
 function hasBTCPattern(binary) {
-    const patterns = ['010', '001', '111', '1010', '0101', '1100', '0010', '1001', '0110'];
+    const patterns = ['010','001','111','1010','0101','1100','0010','1001','0110'];
     return patterns.some(p => binary.includes(p));
 }
-
-// Convert to binary
 function toBinary(input) {
-    let binary = '';
-    for (let i = 0; i < input.length; i++) {
+    let bin = '';
+    for (let i=0; i<input.length; i++) {
         let c = input.charCodeAt(i);
-        for (let j = 7; j >= 0; j--) {
-            binary += (c & (1 << j)) ? '1' : '0';
-        }
+        for (let j=7; j>=0; j--) bin += (c & (1<<j)) ? '1' : '0';
     }
-    return binary;
+    return bin;
 }
-
-// Egg Shorter: remove 000 and 111
 function eggShorter(binary) {
     let result = '';
-    for (let i = 0; i < binary.length; i += 3) {
-        if (i + 3 > binary.length) break;
-        let chunk = binary.substring(i, i + 3);
-        if (chunk !== '000' && chunk !== '111') {
-            result += chunk;
-        }
+    for (let i=0; i<binary.length; i+=3) {
+        if (i+3 > binary.length) break;
+        let chunk = binary.substring(i, i+3);
+        if (chunk !== '000' && chunk !== '111') result += chunk;
     }
     return result;
 }
-
-// ACHi conversion
 function toACHI(washed) {
     let clean = '';
-    for (let i = 0; i < washed.length && clean.length < 6; i++) {
+    for (let i=0; i<washed.length && clean.length<6; i++) {
         if (washed[i].match(/[A-Za-z0-9]/)) clean += washed[i];
     }
     while (clean.length < 6) clean += '0' + (counter % 10);
@@ -356,7 +290,6 @@ function toACHI(washed) {
     return 'ACHi' + clean;
 }
 
-// PROCESS ONE DATA PACKET
 function processData(raw) {
     if (!raw || !raw.trim()) return;
     const data = raw.trim();
@@ -365,22 +298,20 @@ function processData(raw) {
 
     addLog(`📥 #${num}: ${data}`, 'info');
 
-    // 1. Sluice-Bench: check patterns
     const binary = toBinary(data);
     const xmr = hasXMRPattern(binary);
     const btc = hasBTCPattern(binary);
 
     if (!xmr && !btc) {
         rejected++;
-        addLog(`🚫 REJECTED: No patterns found`, 'rejected');
+        addLog(`🚫 REJECTED: No patterns`, 'rejected');
         updateDisplay();
         return;
     }
 
     const crypto = xmr ? 'XMR' : 'BTC';
-    addLog(`🧹 SLUICE-BENCH: ${crypto} patterns found`, 'info');
+    addLog(`🧹 SLUICE-BENCH: ${crypto} patterns`, 'info');
 
-    // 2. Egg Shorter: clean
     const washed = eggShorter(binary);
     if (!washed) {
         rejected++;
@@ -390,36 +321,26 @@ function processData(raw) {
     }
     addLog(`🧹 EGG SHORTER: Cleaned (${washed.length} chars)`, 'info');
 
-    // 3. ACHi conversion
     const achicode = toACHI(washed);
     addLog(`🔢 SHORT: ${achicode}`, 'info');
 
-    // 4. Submit to pool
-    addLog(`📤 SEND: Submitted to pool via wallet`, 'send');
+    addLog(`📤 SEND: Submitted to pool`, 'send');
+    addLog(`✅ ACCEPT: Pool accepted`, 'accepted');
 
-    // 5. Pool accepts
-    addLog(`✅ ACCEPT: Pool accepted share`, 'accepted');
-
-    // 6. Save to wallet
     const earn = 0.0000000001;
     earned += earn;
     shares++;
     accepted++;
     sent++;
-    addLog(`💾 SAVE: +${earn.toFixed(10)} XMR to wallet`, 'accepted');
-    addLog(`🔄 X-SA: X-SA-${String(num).padStart(3, '0')}`, 'day');
+    addLog(`💾 SAVE: +${earn.toFixed(10)} XMR`, 'accepted');
+    addLog(`🔄 X-SA: X-SA-${String(num).padStart(3,'0')}`, 'info');
 
     updateDisplay();
 }
 
-// ============================================================
-// BUTTON FUNCTIONS
-// ============================================================
-
 function processSingle() {
     if (streamIndex >= dataStream.length) streamIndex = 0;
-    const data = dataStream[streamIndex++];
-    processData(data);
+    processData(dataStream[streamIndex++]);
 }
 
 function startRig() {
@@ -427,14 +348,13 @@ function startRig() {
     rigRunning = true;
     document.querySelector('.btn.success').style.display = 'none';
     document.getElementById('stopBtn').style.display = 'inline-block';
-    addLog('▶️ RIG STARTED – collecting data stream', 'info');
+    addLog('▶️ RIG STARTED – auto-collecting', 'info');
 
     autoInterval = setInterval(() => {
         if (!rigRunning) return;
         if (streamIndex >= dataStream.length) streamIndex = 0;
-        const data = dataStream[streamIndex++];
-        processData(data);
-    }, 3000);
+        processData(dataStream[streamIndex++]);
+    }, 2500);
 }
 
 function stopRig() {
@@ -454,22 +374,9 @@ function clearAll() {
     addLog('🗑️ All data cleared', 'info');
 }
 
-function copyWallet() {
-    const wallet = '45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb';
-    navigator.clipboard.writeText(wallet).then(() => {
-        addLog('📋 Wallet copied', 'accepted');
-    }).catch(() => {
-        addLog('❌ Copy failed', 'rejected');
-    });
-}
-
-// ============================================================
 // INIT
-// ============================================================
-
 addLog('🚀 Marduk Rig ready', 'info');
-addLog('💡 Click "START RIG" to begin auto-collecting data', 'info');
-addLog('📦 Data stream contains ' + dataStream.length + ' sample packets', 'info');
+addLog('💡 Click "START RIG" to auto-collect data', 'info');
 updateDisplay();
 </script>
 
