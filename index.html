@@ -297,7 +297,7 @@
         }
         .password-box button:hover { opacity: 0.8; }
 
-        /* ===== ATM POPUP STYLES ===== */
+        /* ===== ATM POPUP – EDITABLE ===== */
         .atm-overlay {
             position: fixed;
             top: 0;
@@ -316,80 +316,97 @@
             background: #0f1322;
             border: 2px solid #ffcc00;
             border-radius: 2rem;
-            padding: 2.5rem;
-            max-width: 480px;
-            width: 92%;
+            padding: 2rem;
+            max-width: 520px;
+            width: 95%;
             box-shadow: 0 0 60px rgba(255,204,0,0.15);
-            text-align: center;
+            text-align: left;
             animation: atmPop 0.3s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         @keyframes atmPop {
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-        .atm-box .atm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .atm-box .atm-icon { text-align: center; font-size: 2.5rem; margin-bottom: 0.5rem; }
         .atm-box h2 {
             color: #ffcc00;
             font-family: 'Courier New', monospace;
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             letter-spacing: 2px;
             border-bottom: 1px solid #2a3a60;
-            padding-bottom: 0.8rem;
-            margin-bottom: 1.2rem;
+            padding-bottom: 0.6rem;
+            margin-bottom: 1rem;
+            text-align: center;
         }
-        .atm-detail {
+        .atm-field {
             display: flex;
-            justify-content: space-between;
-            padding: 0.6rem 0;
-            border-bottom: 1px solid #1a2a4a;
-            font-size: 0.85rem;
+            flex-direction: column;
+            margin-bottom: 0.8rem;
         }
-        .atm-detail .label { color: #8da0c0; }
-        .atm-detail .value { color: #88ffaa; font-weight: bold; letter-spacing: 1px; }
-        .atm-detail .value.highlight { color: #ffcc00; }
+        .atm-field label {
+            color: #8da0c0;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.2rem;
+        }
+        .atm-field input {
+            background: #010410;
+            border: 1px solid #1a2a4a;
+            border-radius: 1.5rem;
+            padding: 0.5rem 1rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #88ffaa;
+            outline: none;
+            width: 100%;
+        }
+        .atm-field input:focus { border-color: #ffcc00; }
+        .atm-field input::placeholder { color: #4a5a6a; }
+
         .atm-counter {
-            margin: 1.2rem 0;
-            padding: 0.8rem;
+            margin: 0.8rem 0;
+            padding: 0.6rem;
             background: #010410;
             border-radius: 1rem;
             border: 1px solid #1a2a4a;
+            text-align: center;
         }
-        .atm-counter .count-label { color: #8da0c0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .atm-counter .count-label { color: #8da0c0; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
         .atm-counter .count-number {
-            font-size: 2.8rem;
+            font-size: 2.2rem;
             font-weight: bold;
             color: #ffcc00;
             font-family: 'Courier New', monospace;
             text-shadow: 0 0 20px rgba(255,204,0,0.2);
         }
-        .atm-close-btn {
-            margin-top: 1.2rem;
-            background: #2a4a7a;
-            color: white;
-            border: none;
-            padding: 0.8rem 2rem;
+        .atm-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .atm-actions button {
+            flex: 1;
+            min-width: 80px;
+            padding: 0.7rem;
             border-radius: 2rem;
-            font-size: 1rem;
-            cursor: pointer;
+            border: none;
             font-family: monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
             transition: 0.2s;
         }
-        .atm-close-btn:hover { background: #3a5a8a; transform: scale(0.96); }
-        .atm-action-tag {
-            display: inline-block;
-            background: #2a6a3a;
-            color: #88ff88;
-            padding: 0.2rem 1rem;
-            border-radius: 1rem;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.8rem;
-        }
+        .atm-actions button:hover { transform: scale(0.96); opacity: 0.9; }
+        .atm-actions .atm-confirm { background: #2a6a3a; color: white; }
+        .atm-actions .atm-cancel { background: #6a2a2a; color: white; }
         .atm-box .sub-text {
+            text-align: center;
             color: #4a5a6a;
-            font-size: 0.6rem;
-            margin-top: 0.8rem;
+            font-size: 0.55rem;
+            margin-top: 0.6rem;
         }
     </style>
 </head>
@@ -407,29 +424,39 @@
         </div>
     </div>
 
-    <!-- ===== ATM POPUP ===== -->
+    <!-- ===== EDITABLE ATM POPUP ===== -->
     <div class="atm-overlay" id="atmOverlay">
         <div class="atm-box">
             <div class="atm-icon">🏦</div>
-            <div class="atm-action-tag" id="atmActionTag">💸 SEND</div>
             <h2>MARDUK ATM</h2>
-            <div class="atm-detail">
-                <span class="label">👤 Account Holder</span>
-                <span class="value highlight">Seliim Ahmed</span>
+            <div class="atm-field">
+                <label>👤 Account Holder (Your Name)</label>
+                <input type="text" id="atmAccountHolder" value="Seliim Ahmed" placeholder="Your full name">
             </div>
-            <div class="atm-detail">
-                <span class="label">🔢 Account Number</span>
-                <span class="value">200-4-25879-0</span>
+            <div class="atm-field">
+                <label>🔢 Account Number (Your Bank)</label>
+                <input type="text" id="atmAccountNumber" value="200-4-25879-0" placeholder="Your account number">
             </div>
-            <div class="atm-detail">
-                <span class="label">💳 Card Number</span>
-                <span class="value">5598 8820 2345 3325</span>
+            <div class="atm-field">
+                <label>💳 Card Number (Your Card)</label>
+                <input type="text" id="atmCardNumber" value="5598 8820 2345 3325" placeholder="Your card number">
+            </div>
+            <div class="atm-field">
+                <label>📤 Receiver Wallet Address (or Bank Account)</label>
+                <input type="text" id="atmReceiver" placeholder="Enter receiver wallet/account">
+            </div>
+            <div class="atm-field">
+                <label>💰 Amount (XMR or currency)</label>
+                <input type="text" id="atmAmount" placeholder="Enter amount">
             </div>
             <div class="atm-counter">
                 <div class="count-label">Transaction Counter</div>
                 <div class="count-number" id="atmCounter">X-SA-001</div>
             </div>
-            <button class="atm-close-btn" onclick="closeATM()">✅ CONFIRM & CLOSE</button>
+            <div class="atm-actions">
+                <button class="atm-confirm" onclick="confirmATM()">✅ CONFIRM SEND</button>
+                <button class="atm-cancel" onclick="closeATM()">❌ CANCEL</button>
+            </div>
             <div class="sub-text">© 2026 Seliim Ahmed · All Rights Reserved</div>
         </div>
     </div>
@@ -597,6 +624,8 @@
         const poolSelect = document.getElementById('poolSelect');
         const startBtn = document.getElementById('startRigBtn');
         const stopBtn = document.getElementById('stopRigBtn');
+        const receiverWalletInput = document.getElementById('receiverWallet');
+        const sendAmountInput = document.getElementById('sendAmount');
 
         // ============================================================
         // 🕐 CLOCK
@@ -673,29 +702,60 @@
         }
 
         // ============================================================
-        // 🏦 ATM POPUP LOGIC
+        // 🏦 EDITABLE ATM POPUP
         // ============================================================
         let transactionCounter = 0;
 
         function openATM(action) {
-            const tag = document.getElementById('atmActionTag');
-            const icons = { 'SEND': '💸', 'RECEIVE': '📥', 'PAY NOW': '💳' };
-            tag.textContent = (icons[action] || '💳') + ' ' + action;
+            // Pre-fill receiver and amount from main UI
+            const receiver = receiverWalletInput.value.trim();
+            const amount = sendAmountInput.value.trim();
+            if (receiver) document.getElementById('atmReceiver').value = receiver;
+            if (amount) document.getElementById('atmAmount').value = amount;
 
+            // Increment counter
             transactionCounter++;
             const counterStr = String(transactionCounter).padStart(3, '0');
             document.getElementById('atmCounter').textContent = 'X-SA-' + counterStr;
 
+            // Show popup
             document.getElementById('atmOverlay').classList.add('active');
 
             addLog('🏦 ATM ' + action + ' opened | Counter: X-SA-' + counterStr, 'info');
             transferStatus.textContent = '🏦 ATM ' + action + ' - Counter: X-SA-' + counterStr;
         }
 
+        function confirmATM() {
+            const holder = document.getElementById('atmAccountHolder').value.trim() || 'Seliim Ahmed';
+            const account = document.getElementById('atmAccountNumber').value.trim() || '200-4-25879-0';
+            const card = document.getElementById('atmCardNumber').value.trim() || '5598 8820 2345 3325';
+            const receiver = document.getElementById('atmReceiver').value.trim();
+            const amount = document.getElementById('atmAmount').value.trim();
+            const counter = document.getElementById('atmCounter').textContent;
+
+            if (!receiver || !amount) {
+                transferStatus.textContent = '❌ Please fill receiver and amount!';
+                addLog('❌ ATM: Missing receiver or amount', 'error');
+                return;
+            }
+
+            // Log the transaction
+            const msg = `💸 TRANSACTION ${counter} | From: ${holder} (${account}) | To: ${receiver} | Amount: ${amount} XMR | Card: ${card}`;
+            addLog('✅ ' + msg, 'share');
+            transferStatus.textContent = '✅ Transaction sent! ' + counter;
+
+            // Close popup
+            document.getElementById('atmOverlay').classList.remove('active');
+
+            // Clear fields (optional)
+            // receiverWalletInput.value = '';
+            // sendAmountInput.value = '';
+        }
+
         function closeATM() {
             document.getElementById('atmOverlay').classList.remove('active');
-            transferStatus.textContent = '✅ Transaction confirmed at ATM';
-            addLog('✅ ATM closed - Transaction confirmed', 'share');
+            transferStatus.textContent = '⏳ Cancelled';
+            addLog('❌ ATM cancelled', 'error');
         }
 
         document.addEventListener('keydown', function(e) {
@@ -781,6 +841,7 @@
         window.payNow = payNow;
         window.openATM = openATM;
         window.closeATM = closeATM;
+        window.confirmATM = confirmATM;
     </script>
 </body>
 </html>
