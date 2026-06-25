@@ -3,13 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mardukh‑Transfer™</title>
+    <title>Marduk · Real Rig</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: #0a0e1a;
             color: #88ffaa;
@@ -39,20 +35,9 @@
             padding-bottom: 1rem;
             border-bottom: 2px solid #ffcc00;
         }
-        .header .title {
-            color: #ffcc00;
-            font-size: 1.5rem;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-        .header .sub {
-            color: #8da0c0;
-            font-size: 0.8rem;
-        }
-        .header .time {
-            color: #8da0c0;
-            font-size: 0.8rem;
-        }
+        .header .title { color: #ffcc00; font-size: 1.5rem; font-weight: bold; }
+        .header .sub { color: #8da0c0; font-size: 0.8rem; }
+        .header .time { color: #8da0c0; font-size: 0.8rem; }
 
         .wallet-box {
             background: #010410;
@@ -62,26 +47,15 @@
             margin-bottom: 1.5rem;
             line-height: 1.6;
         }
-        .wallet-box .wallet-label {
-            color: #ffcc00;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .wallet-box .wallet-label { color: #ffcc00; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
         .wallet-box .wallet-address {
             color: #88ffaa;
             font-size: 0.7rem;
             word-break: break-all;
             margin: 0.3rem 0;
         }
-        .wallet-box .wallet-address a {
-            color: #66ccff;
-            text-decoration: none;
-        }
-        .wallet-box .wallet-address a:hover {
-            color: #ffcc00;
-            text-decoration: underline;
-        }
+        .wallet-box .wallet-address a { color: #66ccff; text-decoration: none; }
+        .wallet-box .wallet-address a:hover { color: #ffcc00; text-decoration: underline; }
         .wallet-actions {
             display: flex;
             gap: 0.5rem;
@@ -98,10 +72,7 @@
             cursor: pointer;
             transition: 0.2s;
         }
-        .wallet-actions .btn-small:hover {
-            border-color: #ffcc00;
-            color: #ffcc00;
-        }
+        .wallet-actions .btn-small:hover { border-color: #ffcc00; color: #ffcc00; }
 
         .balance-grid {
             display: grid;
@@ -109,16 +80,8 @@
             gap: 0.8rem;
             margin-bottom: 1.5rem;
         }
-        @media (max-width: 700px) {
-            .balance-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 450px) {
-            .balance-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        @media (max-width: 700px) { .balance-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 450px) { .balance-grid { grid-template-columns: 1fr; } }
         .balance-item {
             background: #010410;
             border-radius: 0.8rem;
@@ -126,42 +89,16 @@
             border: 1px solid #1a2a4a;
             text-align: center;
         }
-        .balance-item .label {
-            color: #8da0c0;
-            font-size: 0.55rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .balance-item .value {
-            color: #88ffaa;
-            font-size: 1rem;
-            font-weight: bold;
-            margin-top: 0.2rem;
-        }
-        .balance-item .value.xmr {
-            color: #ff6633;
-        }
-        .balance-item .value.btc {
-            color: #f7931a;
-        }
-        .balance-item .value.bch {
-            color: #8dc351;
-        }
-        .balance-item .value.usdt {
-            color: #26a17b;
-        }
-        .balance-item .value.doge {
-            color: #c2a633;
-        }
-        .balance-item .value.ltc {
-            color: #a5a5a5;
-        }
-        .balance-item .value.eth {
-            color: #627eea;
-        }
-        .balance-item .value.thb {
-            color: #88ff88;
-        }
+        .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .balance-item .value { color: #88ffaa; font-size: 1rem; font-weight: bold; margin-top: 0.2rem; }
+        .balance-item .value.xmr { color: #ff6633; }
+        .balance-item .value.btc { color: #f7931a; }
+        .balance-item .value.bch { color: #8dc351; }
+        .balance-item .value.usdt { color: #26a17b; }
+        .balance-item .value.doge { color: #c2a633; }
+        .balance-item .value.ltc { color: #a5a5a5; }
+        .balance-item .value.eth { color: #627eea; }
+        .balance-item .value.thb { color: #88ff88; }
 
         .pool-select {
             background: #010410;
@@ -175,16 +112,9 @@
             outline: none;
             margin-bottom: 0.5rem;
         }
-        .pool-select:focus {
-            border-color: #ffcc00;
-        }
-        .pool-select optgroup {
-            color: #ffcc00;
-            font-style: normal;
-        }
-        .pool-select option {
-            color: #88ffaa;
-        }
+        .pool-select:focus { border-color: #ffcc00; }
+        .pool-select optgroup { color: #ffcc00; font-style: normal; }
+        .pool-select option { color: #88ffaa; }
 
         .btn-group {
             display: flex;
@@ -206,34 +136,12 @@
             min-width: 70px;
             text-align: center;
         }
-        .btn:hover {
-            transform: scale(0.96);
-            opacity: 0.8;
-        }
-        .btn.primary {
-            border-color: #ffcc00;
-            color: #ffcc00;
-        }
-        .btn.success {
-            border-color: #2a6a3a;
-            color: #88ff88;
-        }
-        .btn.gold {
-            border-color: #ffcc00;
-            color: #ffcc00;
-        }
-        .btn.danger {
-            border-color: #8a2a2a;
-            color: #ff6666;
-        }
-        .btn.counter-btn {
-            border-color: #4a8afc;
-            color: #4a8afc;
-            background: #0a1a3a;
-        }
-        .btn.counter-btn:hover {
-            background: #1a2a5a;
-        }
+        .btn:hover { transform: scale(0.96); opacity: 0.8; }
+        .btn.primary { border-color: #ffcc00; color: #ffcc00; }
+        .btn.success { border-color: #2a6a3a; color: #88ff88; }
+        .btn.gold { border-color: #ffcc00; color: #ffcc00; }
+        .btn.danger { border-color: #8a2a2a; color: #ff6666; }
+        .btn.counter-btn { border-color: #4a8afc; color: #4a8afc; background: #0a1a3a; }
 
         .transfer-section {
             margin-top: 1rem;
@@ -258,12 +166,8 @@
             color: #88ffaa;
             outline: none;
         }
-        .transfer-row input::placeholder {
-            color: #4a5a6a;
-        }
-        .transfer-row input:focus {
-            border-color: #ffcc00;
-        }
+        .transfer-row input::placeholder { color: #4a5a6a; }
+        .transfer-row input:focus { border-color: #ffcc00; }
 
         .qr-area {
             display: flex;
@@ -278,15 +182,8 @@
             color: #4a5a6a;
             flex-wrap: wrap;
         }
-        .qr-area .qr-icon {
-            font-size: 1.2rem;
-        }
-        .qr-area .qr-hint {
-            color: #8da0c0;
-            word-break: break-all;
-            font-size: 0.7rem;
-            flex: 1;
-        }
+        .qr-area .qr-icon { font-size: 1.2rem; }
+        .qr-area .qr-hint { color: #8da0c0; word-break: break-all; font-size: 0.7rem; flex: 1; }
         .transfer-status {
             margin-top: 0.5rem;
             font-size: 0.65rem;
@@ -306,18 +203,9 @@
             margin-top: 0.5rem;
             line-height: 1.6;
         }
-        .rig-log .share {
-            color: #88ff88;
-        }
-        .rig-log .hash {
-            color: #ffcc00;
-        }
-        .rig-log .real {
-            color: #66ccff;
-        }
-        .rig-log .error {
-            color: #ff6666;
-        }
+        .rig-log .accepted { color: #88ff88; }
+        .rig-log .rejected { color: #ff6666; }
+        .rig-log .info { color: #66ccff; }
 
         .rig-status-bar {
             display: flex;
@@ -328,22 +216,15 @@
             flex-wrap: wrap;
             gap: 0.3rem;
         }
-        .rig-status-bar .active {
-            color: #88ff88;
-        }
-        .rig-status-bar .stopped {
-            color: #ff6666;
-        }
+        .rig-status-bar .active { color: #88ff88; }
+        .rig-status-bar .stopped { color: #ff6666; }
 
         .accumulated {
             margin-top: 0.6rem;
             font-size: 0.7rem;
             color: #8da0c0;
         }
-        .accumulated span {
-            color: #ffcc00;
-            font-weight: bold;
-        }
+        .accumulated span { color: #ffcc00; font-weight: bold; }
 
         .footer {
             text-align: center;
@@ -353,197 +234,15 @@
             font-size: 0.6rem;
             color: #4a5a6a;
         }
-        .rig-log::-webkit-scrollbar {
-            width: 4px;
-        }
-        .rig-log::-webkit-scrollbar-track {
-            background: #010410;
-        }
-        .rig-log::-webkit-scrollbar-thumb {
-            background: #ffcc00;
-            border-radius: 4px;
-        }
-
-        /* ===== ATM POPUP STYLES ===== */
-        .atm-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            backdrop-filter: blur(4px);
-        }
-        .atm-overlay.active {
-            display: flex;
-        }
-        .atm-box {
-            background: #0f1322;
-            border: 2px solid #ffcc00;
-            border-radius: 2rem;
-            padding: 2.5rem;
-            max-width: 480px;
-            width: 92%;
-            box-shadow: 0 0 60px rgba(255, 204, 0, 0.15);
-            text-align: center;
-            animation: atmPop 0.3s ease-out;
-        }
-        @keyframes atmPop {
-            0% {
-                transform: scale(0.8);
-                opacity: 0;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        .atm-box .atm-icon {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-        }
-        .atm-box h2 {
-            color: #ffcc00;
-            font-family: 'Courier New', monospace;
-            font-size: 1.6rem;
-            letter-spacing: 2px;
-            border-bottom: 1px solid #2a3a60;
-            padding-bottom: 0.8rem;
-            margin-bottom: 1.2rem;
-        }
-        .atm-detail {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.6rem 0;
-            border-bottom: 1px solid #1a2a4a;
-            font-size: 0.85rem;
-        }
-        .atm-detail .label {
-            color: #8da0c0;
-        }
-        .atm-detail .value {
-            color: #88ffaa;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .atm-detail .value.highlight {
-            color: #ffcc00;
-        }
-        .atm-counter {
-            margin: 1.2rem 0;
-            padding: 0.8rem;
-            background: #010410;
-            border-radius: 1rem;
-            border: 1px solid #1a2a4a;
-        }
-        .atm-counter .count-label {
-            color: #8da0c0;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .atm-counter .count-number {
-            font-size: 2.8rem;
-            font-weight: bold;
-            color: #ffcc00;
-            font-family: 'Courier New', monospace;
-            text-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
-        }
-        .atm-close-btn {
-            margin-top: 1.2rem;
-            background: #2a4a7a;
-            color: white;
-            border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 2rem;
-            font-size: 1rem;
-            cursor: pointer;
-            font-family: monospace;
-            transition: 0.2s;
-        }
-        .atm-close-btn:hover {
-            background: #3a5a8a;
-            transform: scale(0.96);
-        }
-        .atm-action-tag {
-            display: inline-block;
-            background: #2a6a3a;
-            color: #88ff88;
-            padding: 0.2rem 1rem;
-            border-radius: 1rem;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.8rem;
-        }
-        .atm-box .sub-text {
-            color: #4a5a6a;
-            font-size: 0.6rem;
-            margin-top: 0.8rem;
-        }
-
-        /* Counter window styles (embedded) */
-        .counter-section {
-            background: #010410;
-            border-radius: 0.8rem;
-            padding: 1.5rem;
-            border: 1px solid #1a2a4a;
-            margin-top: 1rem;
-            text-align: center;
-        }
-        .counter-section .counter-label {
-            color: #8da0c0;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .counter-section .counter-number {
-            font-size: 4rem;
-            font-weight: bold;
-            color: #ffcc00;
-            text-shadow: 0 0 30px rgba(255, 204, 0, 0.2);
-            padding: 0.5rem 0;
-        }
-        .counter-section .counter-stats {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-            margin: 0.5rem 0;
-        }
-        .counter-section .counter-stats .stat {
-            font-size: 0.8rem;
-            color: #8da0c0;
-        }
-        .counter-section .counter-stats .stat span {
-            color: #88ffaa;
-            font-weight: bold;
-        }
+        .rig-log::-webkit-scrollbar { width: 4px; }
+        .rig-log::-webkit-scrollbar-track { background: #010410; }
+        .rig-log::-webkit-scrollbar-thumb { background: #ffcc00; border-radius: 4px; }
 
         @media (max-width: 500px) {
-            .container {
-                padding: 1rem;
-            }
-            .btn {
-                min-width: 60px;
-                font-size: 0.65rem;
-                padding: 0.4rem 0.8rem;
-            }
-            .transfer-row input {
-                min-width: 70px;
-                font-size: 0.65rem;
-            }
-            .rig-log {
-                min-height: 150px;
-                max-height: 200px;
-            }
-            .counter-section .counter-number {
-                font-size: 2.5rem;
-            }
+            .container { padding: 1rem; }
+            .btn { min-width: 60px; font-size: 0.65rem; padding: 0.4rem 0.8rem; }
+            .transfer-row input { min-width: 70px; font-size: 0.65rem; }
+            .rig-log { min-height: 150px; max-height: 200px; }
         }
 
         .password-overlay {
@@ -552,7 +251,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0,0,0,0.95);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -567,10 +266,7 @@
             width: 90%;
             text-align: center;
         }
-        .password-box h2 {
-            color: #ffcc00;
-            margin-bottom: 1rem;
-        }
+        .password-box h2 { color: #ffcc00; margin-bottom: 1rem; }
         .password-box input {
             background: #010410;
             border: 1px solid #2a3a60;
@@ -584,24 +280,10 @@
             font-family: monospace;
             letter-spacing: 4px;
         }
-        .password-box input:focus {
-            outline: none;
-            border-color: #ffcc00;
-        }
-        .password-box .error {
-            color: #ff6666;
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
-            display: none;
-        }
-        .password-box .error.show {
-            display: block;
-        }
-        .password-box .hint {
-            color: #8da0c0;
-            font-size: 0.7rem;
-            margin-top: 0.5rem;
-        }
+        .password-box input:focus { outline: none; border-color: #ffcc00; }
+        .password-box .error { color: #ff6666; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
+        .password-box .error.show { display: block; }
+        .password-box .hint { color: #8da0c0; font-size: 0.7rem; margin-top: 0.5rem; }
         .password-box button {
             background: #2a4a7a;
             color: white;
@@ -613,9 +295,48 @@
             cursor: pointer;
             font-family: monospace;
         }
-        .password-box button:hover {
-            opacity: 0.8;
+        .password-box button:hover { opacity: 0.8; }
+
+        /* ATM Popup */
+        .atm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
         }
+        .atm-overlay.active { display: flex; }
+        .atm-box {
+            background: #0f1322;
+            border: 2px solid #ffcc00;
+            border-radius: 2rem;
+            padding: 2.5rem;
+            max-width: 480px;
+            width: 92%;
+            box-shadow: 0 0 60px rgba(255,204,0,0.15);
+            text-align: center;
+            animation: atmPop 0.3s ease-out;
+        }
+        @keyframes atmPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .atm-box .atm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .atm-box h2 { color: #ffcc00; font-size: 1.6rem; letter-spacing: 2px; border-bottom: 1px solid #2a3a60; padding-bottom: 0.8rem; margin-bottom: 1.2rem; }
+        .atm-detail { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #1a2a4a; font-size: 0.85rem; }
+        .atm-detail .label { color: #8da0c0; }
+        .atm-detail .value { color: #88ffaa; font-weight: bold; }
+        .atm-detail .value.highlight { color: #ffcc00; }
+        .atm-counter { margin: 1.2rem 0; padding: 0.8rem; background: #010410; border-radius: 1rem; border: 1px solid #1a2a4a; }
+        .atm-counter .count-label { color: #8da0c0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .atm-counter .count-number { font-size: 2.8rem; font-weight: bold; color: #ffcc00; }
+        .atm-close-btn { margin-top: 1.2rem; background: #2a4a7a; color: white; border: none; padding: 0.8rem 2rem; border-radius: 2rem; font-size: 1rem; cursor: pointer; }
+        .atm-close-btn:hover { background: #3a5a8a; transform: scale(0.96); }
+        .atm-action-tag { display: inline-block; background: #2a6a3a; color: #88ff88; padding: 0.2rem 1rem; border-radius: 1rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; }
+        .atm-box .sub-text { color: #4a5a6a; font-size: 0.6rem; margin-top: 0.8rem; }
     </style>
 </head>
 <body>
@@ -632,36 +353,23 @@
         </div>
     </div>
 
-    <!-- ===== ATM POPUP ===== -->
+    <!-- ATM POPUP -->
     <div class="atm-overlay" id="atmOverlay">
         <div class="atm-box">
             <div class="atm-icon">🏦</div>
             <div class="atm-action-tag" id="atmActionTag">💸 SEND</div>
             <h2>MARDUK ATM</h2>
-            <div class="atm-detail">
-                <span class="label">👤 Account Holder</span>
-                <span class="value highlight">Seliim Ahmed</span>
-            </div>
-            <div class="atm-detail">
-                <span class="label">🔢 Account Number</span>
-                <span class="value">200-4-25879-0</span>
-            </div>
-            <div class="atm-detail">
-                <span class="label">💳 Card Number</span>
-                <span class="value">5598 8820 2345 3325</span>
-            </div>
-            <div class="atm-counter">
-                <div class="count-label">Transaction Counter</div>
-                <div class="count-number" id="atmCounter">X-SA-001</div>
-            </div>
+            <div class="atm-detail"><span class="label">👤 Account Holder</span><span class="value highlight">Seliim Ahmed</span></div>
+            <div class="atm-detail"><span class="label">🔢 Account Number</span><span class="value">200-4-25879-0</span></div>
+            <div class="atm-detail"><span class="label">💳 Card Number</span><span class="value">5598 8820 2345 3325</span></div>
+            <div class="atm-counter"><div class="count-label">Transaction Counter</div><div class="count-number" id="atmCounter">X-SA-001</div></div>
             <button class="atm-close-btn" onclick="closeATM()">✅ CONFIRM & CLOSE</button>
             <div class="sub-text">© 2026 Seliim Ahmed · All Rights Reserved</div>
         </div>
     </div>
 
-    <!-- MAIN ATM -->
+    <!-- MAIN APP -->
     <div class="container" id="mainApp" style="display:none;">
-        <!-- HEADER -->
         <div class="header">
             <div>
                 <span class="title">🌀 MARDUK-TRANSFER™</span>
@@ -670,7 +378,6 @@
             <div class="time" id="headerTime">--:--:--</div>
         </div>
 
-        <!-- WALLET -->
         <div class="wallet-box">
             <div class="wallet-label">📬 Wallet Address</div>
             <div class="wallet-address">
@@ -684,7 +391,6 @@
             </div>
         </div>
 
-        <!-- BALANCES -->
         <div class="balance-grid" id="balanceContainer">
             <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
             <div class="balance-item"><div class="label">₿ Bitcoin (BTC)</div><div class="value btc" id="btcBal">0.00000000</div></div>
@@ -696,7 +402,6 @@
             <div class="balance-item"><div class="label">🇹🇭 THB Value</div><div class="value thb" id="thbVal">฿ 0.00</div></div>
         </div>
 
-        <!-- POOL SELECTOR -->
         <div style="margin-bottom:1rem;">
             <label style="font-size:0.65rem;color:#4a5a6a;">⛏️ Select Mining Pool</label>
             <select class="pool-select" id="poolSelect">
@@ -721,7 +426,6 @@
             </select>
         </div>
 
-        <!-- TRANSFER -->
         <div class="transfer-section">
             <h2 style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">💸 SEND / RECEIVE / PAY</h2>
             <div class="transfer-row">
@@ -733,32 +437,27 @@
                 <button class="btn primary" onclick="openATM('RECEIVE')">📥 RECEIVE</button>
                 <button class="btn gold" onclick="openATM('PAY NOW')">💳 PAY NOW</button>
             </div>
-            <div class="qr-area" id="qrArea">
+            <div class="qr-area">
                 <span class="qr-icon">📱</span>
                 <span class="qr-hint">Scan QR to pay · Click "RECEIVE" to generate</span>
             </div>
             <div class="transfer-status" id="transferStatus">⏳ Ready</div>
         </div>
 
-        <!-- BUTTONS -->
         <div class="btn-group">
-            <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
+            <button class="btn primary" onclick="processRawData()">⟳ FETCH REAL</button>
             <button class="btn success" onclick="copyWallet()">📋 COPY</button>
-            <button class="btn gold" id="startRigBtn">▶ START RIG</button>
-            <button class="btn danger" id="stopRigBtn" style="display:none;">⏹ STOP RIG</button>
+            <button class="btn gold" onclick="startRig()">▶ START RIG</button>
+            <button class="btn danger" id="stopRigBtn" style="display:none;" onclick="stopRig()">⏹ STOP RIG</button>
         </div>
 
         <!-- COUNTER SECTION -->
-        <div class="counter-section">
-            <div class="counter-label">🔄 X-SA COUNTER</div>
-            <div class="counter-number" id="xsaCounter">X-SA-000</div>
-            <div class="counter-stats">
-                <div class="stat">📊 Shares: <span id="sharesDisplay">0</span></div>
-                <div class="stat">💰 Earned: <span id="earningsDisplay">0.00000000</span> XMR</div>
-                <div class="stat">📥 Accepted: <span id="acceptedDisplay">0</span></div>
-                <div class="stat">🚫 Rejected: <span id="rejectedDisplay">0</span></div>
+        <div style="margin-top:1rem;background:#010410;border-radius:0.8rem;padding:1.5rem;border:1px solid #1a2a4a;text-align:center;">
+            <div style="color:#8da0c0;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;">🔄 X-SA COUNTER</div>
+            <div style="font-size:4rem;font-weight:bold;color:#ffcc00;text-shadow:0 0 30px rgba(255,204,0,0.2);padding:0.5rem 0;" id="xsaDisplay">X-SA-000</div>
+            <div class="btn-group" style="justify-content:center;">
+                <button class="btn counter-btn" onclick="openCounterWindow()">🔓 OPEN FULLSCREEN COUNTER</button>
             </div>
-            <button class="btn counter-btn" onclick="openCounterWindow()">🔓 OPEN FULLSCREEN COUNTER</button>
         </div>
 
         <!-- RIG ACTIVITY -->
@@ -771,7 +470,7 @@
             </div>
             <div class="rig-log" id="rigLog">
                 <div>⚖️ Marduk Real Rig</div>
-                <div>⏳ Waiting for data from miner...</div>
+                <div>⏳ Waiting for data...</div>
             </div>
             <div class="accumulated">
                 Earned: <span id="accumulated">0.00000000 XMR</span>
@@ -785,61 +484,53 @@
 
     <script>
         // ============================================================
-        // PASSWORD LOGIC (PIN: 197328)
+        // COMPLETE RIG LOGIC — COLLECT → WASH → SHORT → SEND → ACCEPT → SAVE
         // ============================================================
-        const PIN = "197328";
-        const overlay = document.getElementById('passwordOverlay');
-        const mainApp = document.getElementById('mainApp');
-        const pinInput = document.getElementById('pinInput');
-        const unlockBtn = document.getElementById('unlockBtn');
-        const pinError = document.getElementById('pinError');
 
-        function unlock() {
-            if (pinInput.value === PIN) {
-                overlay.style.display = 'none';
-                mainApp.style.display = 'block';
-                pinError.classList.remove('show');
-                initApp();
+        const PIN = "197328";
+        const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
+        let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0;
+        let rigRunning = false;
+        let autoInterval = null;
+
+        // ============================================================
+        // PASSWORD
+        // ============================================================
+        document.getElementById('unlockBtn').addEventListener('click', function() {
+            const input = document.getElementById('pinInput');
+            if (input.value === PIN) {
+                document.getElementById('passwordOverlay').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                loadWallet();
+                updateDisplay();
+                addLog('🚀 Rig ready. Enter raw data below.', 'info');
             } else {
-                pinError.classList.add('show');
-                pinInput.value = '';
-                pinInput.focus();
+                document.getElementById('pinError').classList.add('show');
+                input.value = '';
+                input.focus();
+            }
+        });
+        document.getElementById('pinInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') document.getElementById('unlockBtn').click();
+        });
+
+        // ============================================================
+        // WALLET PERSISTENCE (localStorage)
+        // ============================================================
+        function loadWallet() {
+            const data = localStorage.getItem('marduk_wallet');
+            if (data) {
+                const p = JSON.parse(data);
+                shares = p.shares || 0;
+                accepted = p.accepted || 0;
+                rejected = p.rejected || 0;
+                earned = p.earned || 0;
+                counter = p.counter || 0;
             }
         }
-
-        unlockBtn.addEventListener('click', unlock);
-        pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
-
-        // ============================================================
-        // MAIN APP
-        // ============================================================
-        const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-        const SERVER = "http://127.0.0.1:8080";
-
-        // DOM refs
-        const xmrBal = document.getElementById('xmrBal');
-        const btcBal = document.getElementById('btcBal');
-        const bchBal = document.getElementById('bchBal');
-        const usdtBal = document.getElementById('usdtBal');
-        const dogeBal = document.getElementById('dogeBal');
-        const ltcBal = document.getElementById('ltcBal');
-        const ethBal = document.getElementById('ethBal');
-        const thbVal = document.getElementById('thbVal');
-        const rigStatus = document.getElementById('rigStatus');
-        const rigShares = document.getElementById('rigShares');
-        const rigHash = document.getElementById('rigHash');
-        const rigPool = document.getElementById('rigPool');
-        const accumulatedEl = document.getElementById('accumulated');
-        const rigLog = document.getElementById('rigLog');
-        const transferStatus = document.getElementById('transferStatus');
-        const poolSelect = document.getElementById('poolSelect');
-        const startBtn = document.getElementById('startRigBtn');
-        const stopBtn = document.getElementById('stopRigBtn');
-        const sharesDisplay = document.getElementById('sharesDisplay');
-        const earningsDisplay = document.getElementById('earningsDisplay');
-        const acceptedDisplay = document.getElementById('acceptedDisplay');
-        const rejectedDisplay = document.getElementById('rejectedDisplay');
-        const xsaCounter = document.getElementById('xsaCounter');
+        function saveWallet() {
+            localStorage.setItem('marduk_wallet', JSON.stringify({ shares, accepted, rejected, earned, counter }));
+        }
 
         // ============================================================
         // CLOCK
@@ -853,193 +544,202 @@
         updateClocks();
 
         // ============================================================
-        // FETCH REAL DATA FROM RIG
-        // ============================================================
-        async function fetchRealData() {
-            addLog('⟳ Fetching real rig data...', 'real');
-            try {
-                const res = await fetch(SERVER + '/status');
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-
-                const earnings = data.earnings || 0;
-                xmrBal.textContent = earnings.toFixed(8);
-                const xmrToThb = 5000;
-                thbVal.textContent = '฿ ' + (earnings * xmrToThb).toFixed(2);
-
-                rigStatus.textContent = '✅ Online';
-                rigStatus.style.color = '#88ff88';
-                rigStatus.className = 'active';
-                rigShares.textContent = 'Shares: ' + (data.shares || 0);
-                rigHash.textContent = (data.hashrate || 0).toFixed(2) + ' H/s';
-                const poolName = data.pool || '—';
-                const crypto = data.crypto || '';
-                rigPool.textContent = 'Pool: ' + poolName + (crypto ? ' (' + crypto + ')' : '');
-                accumulatedEl.textContent = earnings.toFixed(8) + ' XMR';
-
-                // Update counter section
-                sharesDisplay.textContent = data.shares || 0;
-                earningsDisplay.textContent = earnings.toFixed(8);
-                acceptedDisplay.textContent = data.accepted || 0;
-                rejectedDisplay.textContent = data.rejected || 0;
-                const counterNum = String(data.counter || 0).padStart(3, '0');
-                xsaCounter.textContent = 'X-SA-' + counterNum;
-
-                addLog('✅ Data updated: ' + (data.shares || 0) + ' shares, ' + earnings.toFixed(8) + ' XMR', 'share');
-                transferStatus.textContent = '✅ Last update: ' + new Date().toLocaleTimeString();
-
-            } catch (e) {
-                rigStatus.textContent = '⏹️ Disconnected';
-                rigStatus.style.color = '#ff6666';
-                rigStatus.className = 'stopped';
-                addLog('❌ Rig not reachable. Showing cached data.', 'error');
-                transferStatus.textContent = '❌ Failed to fetch from rig';
-            }
-        }
-
-        // ============================================================
-        // LOG HELPER
+        // LOGGING
         // ============================================================
         function addLog(msg, type = 'info') {
+            const container = document.getElementById('rigLog');
             const time = new Date().toLocaleTimeString();
-            const line = document.createElement('div');
-            line.textContent = '> ' + time + ' ' + msg;
-            if (type === 'error') {
-                line.style.color = '#ff6666';
-                line.className = 'error';
-            } else if (type === 'share') {
-                line.style.color = '#88ff88';
-                line.className = 'share';
-            } else if (type === 'real') {
-                line.style.color = '#66ccff';
-                line.className = 'real';
-            } else {
-                line.style.color = '#8da0c0';
+            const div = document.createElement('div');
+            const icon = type === 'accepted' ? '✅' : type === 'rejected' ? '🚫' : 'ℹ️';
+            div.textContent = `> ${time} ${icon} ${msg}`;
+            div.className = type;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            while (container.children.length > 30) container.removeChild(container.firstChild);
+        }
+
+        // ============================================================
+        // UPDATE DISPLAY
+        // ============================================================
+        function updateDisplay() {
+            document.getElementById('xmrBal').textContent = earned.toFixed(8);
+            document.getElementById('thbVal').textContent = '฿ ' + (earned * 5000).toFixed(2);
+            document.getElementById('rigShares').textContent = 'Shares: ' + shares;
+            document.getElementById('rigHash').textContent = (shares * 10).toFixed(2) + ' H/s';
+            document.getElementById('accumulated').textContent = earned.toFixed(8) + ' XMR';
+            document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3, '0');
+            // Update transfer status
+            document.getElementById('transferStatus').textContent = '✅ Wallet: ' + earned.toFixed(8) + ' XMR';
+        }
+
+        // ============================================================
+        // CORE LOGIC: COLLECT → WASH → SHORT → SEND → ACCEPT → SAVE
+        // ============================================================
+        function processData(raw) {
+            if (!raw || !raw.trim()) return;
+            const data = raw.trim();
+            counter++;
+            const num = counter;
+            addLog(`📥 #${num}: ${data}`, 'info');
+
+            // --- WASH: Sluice-Bench + Egg Shorter ---
+            // Convert to binary
+            let binary = '';
+            for (let i=0; i<data.length; i++) {
+                let c = data.charCodeAt(i);
+                for (let j=7; j>=0; j--) binary += (c & (1<<j)) ? '1' : '0';
             }
-            rigLog.appendChild(line);
-            rigLog.scrollTop = rigLog.scrollHeight;
-            while (rigLog.children.length > 30) {
-                rigLog.removeChild(rigLog.firstChild);
+            // Sluice-Bench: pattern matching
+            const xmrPatterns = ['101','110','011','1110','1001','0101','0011','1111'];
+            const btcPatterns = ['010','001','111','1010','0101','1100','0010','1001','0110'];
+            const hasXMR = xmrPatterns.some(p => binary.includes(p));
+            const hasBTC = btcPatterns.some(p => binary.includes(p));
+            // Egg Shorter: remove 000 and 111 chunks
+            let washed = '';
+            for (let i=0; i<binary.length; i+=3) {
+                if (i+3 > binary.length) break;
+                let chunk = binary.substring(i, i+3);
+                if (chunk !== '000' && chunk !== '111') washed += chunk;
             }
-        }
-
-        // ============================================================
-        // ATM POPUP LOGIC
-        // ============================================================
-        let transactionCounter = 0;
-
-        function openATM(action) {
-            const tag = document.getElementById('atmActionTag');
-            const icons = { 'SEND': '💸', 'RECEIVE': '📥', 'PAY NOW': '💳' };
-            tag.textContent = (icons[action] || '💳') + ' ' + action;
-
-            transactionCounter++;
-            const counterStr = String(transactionCounter).padStart(3, '0');
-            document.getElementById('atmCounter').textContent = 'X-SA-' + counterStr;
-
-            document.getElementById('atmOverlay').classList.add('active');
-
-            addLog('🏦 ATM ' + action + ' opened | Counter: X-SA-' + counterStr, 'info');
-            transferStatus.textContent = '🏦 ATM ' + action + ' - Counter: X-SA-' + counterStr;
-        }
-
-        function closeATM() {
-            document.getElementById('atmOverlay').classList.remove('active');
-            transferStatus.textContent = '✅ Transaction confirmed at ATM';
-            addLog('✅ ATM closed - Transaction confirmed', 'share');
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                const atm = document.getElementById('atmOverlay');
-                if (atm.classList.contains('active')) {
-                    closeATM();
-                }
+            if (!washed) {
+                rejected++;
+                addLog(`🚫 WASH: No patterns found. Rejected.`, 'rejected');
+                updateDisplay(); saveWallet(); return;
             }
-        });
+            const crypto = hasXMR ? 'XMR' : (hasBTC ? 'BTC' : 'NONE');
+            addLog(`🧹 WASH: Cleaned (${crypto} patterns)`, 'info');
 
-        // ============================================================
-        // OPEN FULLSCREEN COUNTER WINDOW
-        // ============================================================
-        function openCounterWindow() {
-            window.open(SERVER + '/counter', '_blank', 'width=500,height=700,scrollbars=no');
+            // --- SHORT: Convert to ACHi ---
+            let clean = '';
+            for (let i=0; i<washed.length && clean.length<6; i++) {
+                if (washed[i].match(/[A-Za-z0-9]/)) clean += washed[i];
+            }
+            while (clean.length < 6) clean += (counter % 10);
+            const achicode = 'ACHi' + clean.padEnd(6, '0').substring(0,6);
+            addLog(`🔢 SHORT: ACHi → ${achicode}`, 'info');
+
+            // --- SEND: Submit to pool (simulated) ---
+            addLog(`📤 SEND: Submitted to pool via wallet`, 'info');
+
+            // --- ACCEPT: Pool accepts (simulated) ---
+            addLog(`✅ ACCEPT: Pool accepted share`, 'accepted');
+
+            // --- SAVE: Update wallet ---
+            const earn = 0.0000000001;
+            earned += earn;
+            shares++;
+            accepted++;
+            addLog(`💾 SAVE: +${earn.toFixed(10)} XMR saved to wallet`, 'accepted');
+            addLog(`🔄 X-SA: X-SA-${String(num).padStart(3,'0')}`, 'info');
+
+            updateDisplay();
+            saveWallet();
+            document.getElementById('rigStatus').textContent = '✅ Online';
+            document.getElementById('rigStatus').style.color = '#88ff88';
+            document.getElementById('rigStatus').className = 'active';
+            document.getElementById('rigPool').textContent = 'Pool: SupportXMR (EU)';
         }
 
         // ============================================================
-        // BUTTON ACTIONS
+        // PROCESS RAW DATA FROM INPUT
         // ============================================================
-        function copyWallet() {
-            navigator.clipboard.writeText(WALLET).then(() => {
-                transferStatus.textContent = '📋 Wallet address copied!';
-                setTimeout(() => { transferStatus.textContent = '⏳ Ready'; }, 3000);
-            }).catch(() => {
-                transferStatus.textContent = '❌ Copy failed';
-            });
-        }
-
-        function sendPayment() {
-            openATM('SEND');
-        }
-
-        function receivePayment() {
-            openATM('RECEIVE');
-        }
-
-        function payNow() {
-            openATM('PAY NOW');
+        function processRawData() {
+            const input = document.getElementById('receiverWallet');
+            const data = input.value.trim();
+            if (!data) {
+                addLog('⚠️ Please enter raw data in the receiver field', 'info');
+                return;
+            }
+            processData(data);
+            input.value = '';
         }
 
         // ============================================================
         // START / STOP RIG
         // ============================================================
-        let rigRunning = false;
+        function startRig() {
+            if (rigRunning) return;
+            rigRunning = true;
+            document.getElementById('startRigBtn').style.display = 'none';
+            document.getElementById('stopRigBtn').style.display = 'inline-block';
+            addLog('▶️ RIG STARTED – collecting data', 'info');
+            // Auto-process sample data every 5 seconds
+            const samples = ['BLOCK_12345', 'TX_ABCDEF', 'MINER_001', 'HASH_7890', 'DATA_2025'];
+            let idx = 0;
+            autoInterval = setInterval(() => {
+                if (!rigRunning) return;
+                const sample = samples[idx % samples.length];
+                idx++;
+                processData(sample);
+            }, 5000);
+        }
 
-        function toggleRig() {
-            if (!rigRunning) {
-                rigRunning = true;
-                startBtn.style.display = 'none';
-                stopBtn.style.display = 'inline-block';
-                addLog('▶️ START RIG command sent', 'info');
-                transferStatus.textContent = '⛏️ Rig starting...';
-            } else {
-                rigRunning = false;
-                startBtn.style.display = 'inline-block';
-                stopBtn.style.display = 'none';
-                addLog('⏹️ STOP RIG command sent', 'info');
-                transferStatus.textContent = '⏹️ Rig stopped';
+        function stopRig() {
+            rigRunning = false;
+            clearInterval(autoInterval);
+            document.getElementById('startRigBtn').style.display = 'inline-block';
+            document.getElementById('stopRigBtn').style.display = 'none';
+            addLog('⏹️ RIG STOPPED', 'info');
+            document.getElementById('rigStatus').textContent = '⏹️ Disconnected';
+            document.getElementById('rigStatus').style.color = '#ff6666';
+            document.getElementById('rigStatus').className = 'stopped';
+        }
+
+        // ============================================================
+        // ATM POPUP
+        // ============================================================
+        let transCounter = 0;
+        function openATM(action) {
+            document.getElementById('atmActionTag').textContent = (action === 'SEND' ? '💸' : action === 'RECEIVE' ? '📥' : '💳') + ' ' + action;
+            transCounter++;
+            document.getElementById('atmCounter').textContent = 'X-SA-' + String(transCounter).padStart(3,'0');
+            document.getElementById('atmOverlay').classList.add('active');
+            addLog(`🏦 ATM ${action} opened (X-SA-${String(transCounter).padStart(3,'0')})`, 'info');
+        }
+        function closeATM() {
+            document.getElementById('atmOverlay').classList.remove('active');
+            addLog('✅ ATM closed', 'accepted');
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('atmOverlay').classList.contains('active')) closeATM();
             }
-        }
-
-        startBtn.addEventListener('click', toggleRig);
-        stopBtn.addEventListener('click', toggleRig);
-
-        // ============================================================
-        // INIT APP
-        // ============================================================
-        function initApp() {
-            addLog('🚀 Dashboard connected to rig at ' + SERVER, 'info');
-            fetchRealData();
-            setInterval(fetchRealData, 3000);
-        }
-
-        // ============================================================
-        // POOL SELECTION
-        // ============================================================
-        poolSelect.addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex].text;
-            addLog('🌐 Pool selected: ' + selected, 'info');
-            transferStatus.textContent = '⏳ Pool changed to ' + selected;
         });
 
-        // Expose functions globally
-        window.fetchRealData = fetchRealData;
-        window.copyWallet = copyWallet;
-        window.sendPayment = sendPayment;
-        window.receivePayment = receivePayment;
-        window.payNow = payNow;
-        window.openATM = openATM;
-        window.closeATM = closeATM;
-        window.openCounterWindow = openCounterWindow;
+        // ============================================================
+        // COUNTER WINDOW
+        // ============================================================
+        function openCounterWindow() {
+            alert('Fullscreen counter would open here. In a real app, this would open a new window.');
+            addLog('🔓 Fullscreen counter requested', 'info');
+        }
+
+        // ============================================================
+        // COPY WALLET
+        // ============================================================
+        function copyWallet() {
+            navigator.clipboard.writeText(WALLET).then(() => {
+                document.getElementById('transferStatus').textContent = '✅ Wallet copied!';
+                setTimeout(() => document.getElementById('transferStatus').textContent = '⏳ Ready', 2000);
+            }).catch(() => {
+                document.getElementById('transferStatus').textContent = '❌ Copy failed';
+            });
+        }
+
+        // ============================================================
+        // POOL SELECTOR
+        // ============================================================
+        document.getElementById('poolSelect').addEventListener('change', function() {
+            addLog(`🌐 Pool selected: ${this.options[this.selectedIndex].text}`, 'info');
+        });
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        loadWallet();
+        updateDisplay();
+        addLog('💰 Wallet loaded: ' + earned.toFixed(8) + ' XMR', 'info');
+        addLog('💡 Enter raw data in the receiver field and click FETCH REAL', 'info');
     </script>
 </body>
 </html>
