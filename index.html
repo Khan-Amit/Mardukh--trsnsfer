@@ -243,11 +243,77 @@
             .transfer-row input { min-width: 70px; font-size: 0.65rem; }
             .rig-log { min-height: 150px; max-height: 200px; }
         }
+
+        /* Password overlay */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .password-box {
+            background: #0f1322;
+            border: 2px solid #ffcc00;
+            border-radius: 2rem;
+            padding: 3rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .password-box h2 { color: #ffcc00; margin-bottom: 1rem; }
+        .password-box input {
+            background: #010410;
+            border: 1px solid #2a3a60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 2rem;
+            width: 100%;
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 1rem 0;
+            font-family: monospace;
+            letter-spacing: 4px;
+        }
+        .password-box input:focus { outline: none; border-color: #ffcc00; }
+        .password-box .error { color: #ff6666; font-size: 0.8rem; margin-top: 0.5rem; display: none; }
+        .password-box .error.show { display: block; }
+        .password-box .hint { color: #8da0c0; font-size: 0.7rem; margin-top: 0.5rem; }
+        .password-box button {
+            background: #2a4a7a;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 2rem;
+            width: 100%;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .password-box button:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div class="container">
+    <!-- PASSWORD OVERLAY -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <h2>🔐 MARDUK ATM</h2>
+            <p style="color:#8da0c0;">Enter PIN to unlock</p>
+            <input type="password" id="pinInput" maxlength="6" placeholder="••••••" autofocus>
+            <button id="unlockBtn">🔓 UNLOCK</button>
+            <div class="error" id="pinError">❌ Invalid PIN</div>
+            <div class="hint">Hint: 197328</div>
+        </div>
+    </div>
+
+    <!-- MAIN ATM -->
+    <div class="container" id="mainApp" style="display:none;">
         <!-- HEADER -->
         <div class="header">
             <div>
@@ -331,9 +397,10 @@
         <div class="btn-group">
             <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
             <button class="btn success" onclick="copyWallet()">📋 COPY</button>
+            <button class="btn gold" id="startRigBtn">▶ START RIG</button>
         </div>
 
-        <!-- RIG ACTIVITY — REAL DATA -->
+        <!-- RIG ACTIVITY -->
         <div style="margin-top:1.5rem;background:#010410;border-radius:0.8rem;padding:1rem;border:1px solid #1a2a4a;">
             <div class="rig-status-bar">
                 <span id="rigStatus" style="color:#ff6666;">⏹️ Disconnected</span>
@@ -357,13 +424,37 @@
 
     <script>
         // ============================================================
-        // 🔐 CONFIG — CHANGE THIS TO YOUR RIG'S IP
+        // 🔐 PASSWORD LOGIC (PIN: 197328)
         // ============================================================
-        const RIG_STATUS_URL = "http://127.0.0.1:8080/miner_status.json";
+        const PIN = "197328";
+        const overlay = document.getElementById('passwordOverlay');
+        const mainApp = document.getElementById('mainApp');
+        const pinInput = document.getElementById('pinInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const pinError = document.getElementById('pinError');
+
+        function unlock() {
+            if (pinInput.value === PIN) {
+                overlay.style.display = 'none';
+                mainApp.style.display = 'block';
+                pinError.classList.remove('show');
+                initApp();
+            } else {
+                pinError.classList.add('show');
+                pinInput.value = '';
+                pinInput.focus();
+            }
+        }
+
+        unlockBtn.addEventListener('click', unlock);
+        pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
 
         // ============================================================
-        // 📡 DOM REFS
+        // 📡 ATM LOGIC
         // ============================================================
+        const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
+        const RIG_STATUS_URL = "http://127.0.0.1:8080/miner_status.json";
+
         const $ = id => document.getElementById(id);
         const xmrBal = $('xmrBal');
         const btcBal = $('btcBal');
@@ -422,7 +513,7 @@
         }
 
         // ============================================================
-        // 🔗 FETCH REAL DATA FROM RIG
+        // 🔗 FETCH REAL DATA
         // ============================================================
         async function fetchRealData() {
             addLog('📡 Fetching real rig data...', 'real');
@@ -431,7 +522,6 @@
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
 
-                // Update UI with REAL data
                 const hashrate = data.hashrate || 0;
                 const shares = data.shares || 0;
                 const earnings = data.earnings || 0;
@@ -444,13 +534,9 @@
                 rigStatus.textContent = '⛏️ LIVE';
                 rigStatus.style.color = '#88ff88';
 
-                // Save to localStorage
                 localStorage.setItem('marduk_accumulated', earnings);
-
-                // Update wallet balance
-                const xmr = earnings;
-                xmrBal.textContent = xmr.toFixed(8);
-                const thb = xmr * 5500;
+                xmrBal.textContent = earnings.toFixed(8);
+                const thb = earnings * 5500;
                 thbVal.textContent = `฿ ${thb.toFixed(2)}`;
 
                 addLog(`✅ REAL: ${hashrate.toFixed(1)} H/s · ${shares} shares · ${earnings.toFixed(8)} XMR · ${pool}`, 'real');
@@ -458,13 +544,33 @@
             } catch (e) {
                 rigStatus.textContent = '⏹️ Waiting for rig...';
                 rigStatus.style.color = '#ff6666';
-                // Show cached value if available
-                if (cachedEarnings) {
-                    // Keep showing cached
+                if (!cachedEarnings) {
+                    // keep showing 0
                 }
                 addLog('⏳ Rig not reachable. Showing cached data.', 'error');
             }
         }
+
+        // ============================================================
+        // ▶ START RIG BUTTON
+        // ============================================================
+        document.getElementById('startRigBtn').addEventListener('click', function() {
+            addLog('▶ Attempting to start rig...', 'real');
+            // Open the script in a terminal (works on Linux/macOS)
+            // For Windows, we could use a different approach, but let's give instructions.
+            // Option: open a terminal with the command
+            if (navigator.userAgent.indexOf('Win') !== -1) {
+                // Windows
+                alert('Please open Command Prompt and run: run_rig.sh (or run the commands manually)');
+            } else {
+                // macOS/Linux
+                // Try to open a terminal and run the script
+                const cmd = 'gnome-terminal -- bash -c "./run_rig.sh; exec bash" || xterm -e "./run_rig.sh" || osascript -e \'tell app "Terminal" to do script "./run_rig.sh"\'';
+                // We can't guarantee, so just show instructions
+                alert('Please open a terminal and run: ./run_rig.sh');
+            }
+            addLog('📋 Instructions: Run "./run_rig.sh" in a terminal.', 'info');
+        });
 
         // ============================================================
         // 💸 TRANSFER FUNCTIONS
@@ -488,7 +594,7 @@
 
         function receivePayment() {
             const amount = sendAmount.value.trim() || '0.01';
-            const qrText = `xmr:45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb?amount=${amount}`;
+            const qrText = `xmr:${WALLET}?amount=${amount}`;
             qrArea.innerHTML = `
                 <span class="qr-icon">📱</span>
                 <span class="qr-hint">QR: ${qrText}</span>
@@ -517,25 +623,24 @@
         }
 
         function copyWallet() {
-            navigator.clipboard.writeText("45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb");
+            navigator.clipboard.writeText(WALLET);
             addLog('📋 Wallet copied');
         }
 
         // ============================================================
         // 🚀 INIT
         // ============================================================
-        addLog('⚖️ Marduk Real Rig v1.0');
-        addLog('📡 Waiting for rig data...');
-        fetchRealData();
+        function initApp() {
+            addLog('⚖️ Marduk Real Rig v1.0');
+            addLog('📡 Waiting for rig data...');
+            fetchRealData();
+            setInterval(fetchRealData, 10000);
 
-        // Auto-refresh every 10 seconds
-        setInterval(fetchRealData, 10000);
-
-        // Pool change (just for display)
-        poolSelect.addEventListener('change', function() {
-            const pool = this.options[this.selectedIndex].text;
-            addLog(`🔄 Selected pool: ${pool}`, 'info');
-        });
+            poolSelect.addEventListener('change', function() {
+                const pool = this.options[this.selectedIndex].text;
+                addLog(`🔄 Selected pool: ${pool}`, 'info');
+            });
+        }
     </script>
 </body>
 </html>
