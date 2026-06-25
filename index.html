@@ -43,6 +43,7 @@ body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;paddin
 .password-box button{background:#2a4a7a;color:#fff;border:none;padding:0.8rem;border-radius:2rem;width:100%;font-size:1rem;cursor:pointer;}
 .password-box .error{color:#ff6666;display:none;}
 .password-box .error.show{display:block;}
+.password-box .hint{color:#4a5a6a;font-size:0.7rem;margin-top:0.5rem;}
 .atm-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:none;justify-content:center;align-items:center;z-index:10000;}
 .atm-overlay.active{display:flex;}
 .atm-box{background:#0f1322;border:2px solid #ffcc00;border-radius:2rem;padding:2.5rem;max-width:480px;width:92%;text-align:center;animation:atmPop 0.3s ease-out;}
@@ -65,7 +66,7 @@ body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;paddin
         <input type="password" id="pinInput" maxlength="6" placeholder="••••••" autofocus>
         <button id="unlockBtn">🔓 UNLOCK</button>
         <div class="error" id="pinError">❌ Invalid PIN</div>
-        <div style="color:#4a5a6a;font-size:0.7rem;margin-top:0.5rem;">Hint: 197328</div>
+        <div class="hint">Hint: 197328</div>
     </div>
 </div>
 <div class="atm-overlay" id="atmOverlay">
@@ -92,9 +93,9 @@ body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;paddin
         <div style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">SEND / RECEIVE / PAY</div>
         <div class="transfer-row"><input type="text" id="receiverWallet" placeholder="Receiver Wallet" /><input type="text" id="sendAmount" placeholder="Amount XMR" /></div>
         <div class="btn-group">
-            <button class="btn success" onclick="openATM('SEND')">SEND</button>
-            <button class="btn primary" onclick="openATM('RECEIVE')">RECEIVE</button>
-            <button class="btn gold" onclick="openATM('PAY NOW')">PAY NOW</button>
+            <button class="btn success" onclick="openATM('SEND')">💸 SEND</button>
+            <button class="btn primary" onclick="openATM('RECEIVE')">📥 RECEIVE</button>
+            <button class="btn gold" onclick="openATM('PAY NOW')">💳 PAY NOW</button>
         </div>
         <div class="qr-area"><span>📱</span><span>Scan QR · Click RECEIVE to generate</span></div>
         <div class="transfer-status" id="transferStatus">Ready</div>
@@ -140,23 +141,22 @@ function unlock() {
 unlockBtn.addEventListener('click', unlock);
 pinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') unlock(); });
 
-// GLOBALS
 const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-let shares=0, accepted=0, rejected=0, earned=0, counter=0, sent=0, txCounter=0;
+let shares=0,accepted=0,rejected=0,earned=0,counter=0,sent=0,txCounter=0;
 
-function addLog(msg, type='info') {
+function addLog(msg,type){
     const c=document.getElementById('rigLog');
     const t=new Date().toLocaleTimeString();
     const d=document.createElement('div');
     const icons = {'accepted':'✅','rejected':'🚫','send':'📤','info':'ℹ️'};
-    d.textContent = `> ${t} ${icons[type]||'ℹ️'} ${msg}`;
+    d.textContent = '> '+t+' '+(icons[type]||'ℹ️')+' '+msg;
     d.style.color = type==='accepted'?'#88ff88':type==='rejected'?'#ff6666':type==='send'?'#ffcc00':'#66ccff';
     c.appendChild(d);
     c.scrollTop = c.scrollHeight;
     while(c.children.length>100)c.removeChild(c.firstChild);
 }
 
-function updateDisplay() {
+function updateDisplay(){
     document.getElementById('xmrBal').textContent = earned.toFixed(8);
     document.getElementById('shareDisplay').textContent = shares;
     document.getElementById('acceptedDisplay').textContent = accepted;
@@ -166,66 +166,55 @@ function updateDisplay() {
     document.getElementById('sentCount').textContent = sent;
     document.getElementById('sortedCount').textContent = counter;
     document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3,'0');
-    document.getElementById('transferStatus').textContent = `Wallet: ${earned.toFixed(8)} XMR`;
+    document.getElementById('transferStatus').textContent = 'Wallet: '+earned.toFixed(8)+' XMR';
 }
 
-function updateClocks() {
-    const n = new Date().toLocaleTimeString();
+function updateClocks(){
+    const n=new Date().toLocaleTimeString();
     document.getElementById('headerTime').textContent = n;
     document.getElementById('footerTime').textContent = n;
 }
 setInterval(updateClocks,1000); updateClocks();
 
-// FETCH (standalone – just logs)
-function fetchRealData() {
-    addLog('Fetching data... (standalone)','info');
-}
+function fetchRealData(){ addLog('Fetching... (standalone)','info'); }
 
-// DYNAMIC ATM
-function openATM(action) {
-    const tag = document.getElementById('atmActionTag');
-    const icons = {'SEND':'💸','RECEIVE':'📥','PAY NOW':'💳'};
-    tag.textContent = (icons[action]||'💳') + ' ' + action;
+function openATM(action){
+    const tag=document.getElementById('atmActionTag');
+    const icons={'SEND':'💸','RECEIVE':'📥','PAY NOW':'💳'};
+    tag.textContent=(icons[action]||'💳')+' '+action;
     txCounter++;
-    const txId = 'X-SA-' + String(txCounter).padStart(3,'0');
-    document.getElementById('atmTxId').textContent = txId;
-    // also update main X-SA counter
+    const txId='X-SA-'+String(txCounter).padStart(3,'0');
+    document.getElementById('atmTxId').textContent=txId;
     counter++;
-    document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3,'0');
-    // log and update stats
-    if (action === 'SEND') {
-        const rec = document.getElementById('receiverWallet').value.trim() || 'unknown';
-        const amt = document.getElementById('sendAmount').value.trim() || '0';
-        addLog(`SEND ${amt} XMR to ${rec} (${txId})`,'send');
+    document.getElementById('xsaDisplay').textContent='X-SA-'+String(counter).padStart(3,'0');
+    if(action==='SEND'){
+        const rec=document.getElementById('receiverWallet').value.trim()||'unknown';
+        const amt=document.getElementById('sendAmount').value.trim()||'0';
+        addLog('SEND '+amt+' XMR to '+rec+' ('+txId+')','send');
         shares++; sent++; earned += 0.0000000001;
-    } else if (action === 'RECEIVE') {
-        addLog(`RECEIVE request (${txId})`,'send');
+    } else if(action==='RECEIVE'){
+        addLog('RECEIVE request ('+txId+')','send');
         shares++; sent++; earned += 0.0000000001;
-    } else if (action === 'PAY NOW') {
-        const amt = document.getElementById('sendAmount').value.trim() || '0';
-        addLog(`PAY NOW ${amt} XMR (${txId})`,'send');
+    } else if(action==='PAY NOW'){
+        const amt=document.getElementById('sendAmount').value.trim()||'0';
+        addLog('PAY NOW '+amt+' XMR ('+txId+')','send');
         shares++; sent++; earned += 0.0000000001;
     }
     updateDisplay();
     document.getElementById('atmOverlay').classList.add('active');
-    addLog(`ATM ${action} opened (${txId})`,'info');
+    addLog('ATM '+action+' opened ('+txId+')','info');
 }
-function closeATM() {
-    document.getElementById('atmOverlay').classList.remove('active');
-    addLog('ATM closed','accepted');
-}
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && document.getElementById('atmOverlay').classList.contains('active')) closeATM();
-});
+function closeATM(){ document.getElementById('atmOverlay').classList.remove('active'); addLog('ATM closed','accepted'); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getElementById('atmOverlay').classList.contains('active')) closeATM(); });
 
-function copyWallet() {
+function copyWallet(){
     navigator.clipboard.writeText(WALLET).then(()=>{
-        document.getElementById('transferStatus').textContent = '✅ Copied!';
+        document.getElementById('transferStatus').textContent='✅ Copied!';
         setTimeout(()=>document.getElementById('transferStatus').textContent='Ready',2000);
     }).catch(()=>document.getElementById('transferStatus').textContent='❌ Copy failed');
 }
 
-function initApp() {
+function initApp(){
     addLog('ATM ready – click SEND, RECEIVE, or PAY NOW','info');
     updateDisplay();
 }
