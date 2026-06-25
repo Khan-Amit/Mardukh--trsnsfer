@@ -1,21 +1,26 @@
-# Build outputs
-*.exe
+# Compiled output
+marduk_rig
 *.o
-*.so
-*.dylib
-egg_miner
+*.exe
+*.out
 
-# Logs
+# Mining data (keep safe)
+earnings.dat
+miner_status.json
 *.log
-*.tmp
 
-# Python
-__pycache__/
-*.pyc
+# Build directories
+build/
+cmake-build-*/
 
-# OS
+# Editor temp files
+*.swp
+*~
 .DS_Store
 Thumbs.db
 
-# Env
-.env
+# Your wallet and config – keep private
+*.conf
+*.cfg
+*.key
+*.pem
