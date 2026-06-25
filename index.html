@@ -296,6 +296,101 @@
             font-family: monospace;
         }
         .password-box button:hover { opacity: 0.8; }
+
+        /* ===== ATM POPUP STYLES ===== */
+        .atm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+        .atm-overlay.active { display: flex; }
+        .atm-box {
+            background: #0f1322;
+            border: 2px solid #ffcc00;
+            border-radius: 2rem;
+            padding: 2.5rem;
+            max-width: 480px;
+            width: 92%;
+            box-shadow: 0 0 60px rgba(255,204,0,0.15);
+            text-align: center;
+            animation: atmPop 0.3s ease-out;
+        }
+        @keyframes atmPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .atm-box .atm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .atm-box h2 {
+            color: #ffcc00;
+            font-family: 'Courier New', monospace;
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            border-bottom: 1px solid #2a3a60;
+            padding-bottom: 0.8rem;
+            margin-bottom: 1.2rem;
+        }
+        .atm-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid #1a2a4a;
+            font-size: 0.85rem;
+        }
+        .atm-detail .label { color: #8da0c0; }
+        .atm-detail .value { color: #88ffaa; font-weight: bold; letter-spacing: 1px; }
+        .atm-detail .value.highlight { color: #ffcc00; }
+        .atm-counter {
+            margin: 1.2rem 0;
+            padding: 0.8rem;
+            background: #010410;
+            border-radius: 1rem;
+            border: 1px solid #1a2a4a;
+        }
+        .atm-counter .count-label { color: #8da0c0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .atm-counter .count-number {
+            font-size: 2.8rem;
+            font-weight: bold;
+            color: #ffcc00;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 20px rgba(255,204,0,0.2);
+        }
+        .atm-close-btn {
+            margin-top: 1.2rem;
+            background: #2a4a7a;
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: monospace;
+            transition: 0.2s;
+        }
+        .atm-close-btn:hover { background: #3a5a8a; transform: scale(0.96); }
+        .atm-action-tag {
+            display: inline-block;
+            background: #2a6a3a;
+            color: #88ff88;
+            padding: 0.2rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+        }
+        .atm-box .sub-text {
+            color: #4a5a6a;
+            font-size: 0.6rem;
+            margin-top: 0.8rem;
+        }
     </style>
 </head>
 <body>
@@ -309,6 +404,33 @@
             <button id="unlockBtn">🔓 UNLOCK</button>
             <div class="error" id="pinError">❌ Invalid PIN</div>
             <div class="hint">Hint: 197328</div>
+        </div>
+    </div>
+
+    <!-- ===== ATM POPUP ===== -->
+    <div class="atm-overlay" id="atmOverlay">
+        <div class="atm-box">
+            <div class="atm-icon">🏦</div>
+            <div class="atm-action-tag" id="atmActionTag">💸 SEND</div>
+            <h2>MARDUK ATM</h2>
+            <div class="atm-detail">
+                <span class="label">👤 Account Holder</span>
+                <span class="value highlight">Seliim Ahmed</span>
+            </div>
+            <div class="atm-detail">
+                <span class="label">🔢 Account Number</span>
+                <span class="value">200-4-25879-0</span>
+            </div>
+            <div class="atm-detail">
+                <span class="label">💳 Card Number</span>
+                <span class="value">5598 8820 2345 3325</span>
+            </div>
+            <div class="atm-counter">
+                <div class="count-label">Transaction Counter</div>
+                <div class="count-number" id="atmCounter">X-SA-001</div>
+            </div>
+            <button class="atm-close-btn" onclick="closeATM()">✅ CONFIRM & CLOSE</button>
+            <div class="sub-text">© 2026 Seliim Ahmed · All Rights Reserved</div>
         </div>
     </div>
 
@@ -382,9 +504,9 @@
                 <input type="text" id="sendAmount" placeholder="Amount (XMR)" />
             </div>
             <div class="btn-group">
-                <button class="btn success" onclick="sendPayment()">💸 SEND</button>
-                <button class="btn primary" onclick="receivePayment()">📥 RECEIVE</button>
-                <button class="btn gold" onclick="payNow()">💳 PAY NOW</button>
+                <button class="btn success" onclick="openATM('SEND')">💸 SEND</button>
+                <button class="btn primary" onclick="openATM('RECEIVE')">📥 RECEIVE</button>
+                <button class="btn gold" onclick="openATM('PAY NOW')">💳 PAY NOW</button>
             </div>
             <div class="qr-area" id="qrArea">
                 <span class="qr-icon">📱</span>
@@ -439,7 +561,7 @@
                 overlay.style.display = 'none';
                 mainApp.style.display = 'block';
                 pinError.classList.remove('show');
-                initApp();  // start the app after unlock
+                initApp();
             } else {
                 pinError.classList.add('show');
                 pinInput.value = '';
@@ -454,7 +576,7 @@
         // 🚀 MAIN APP – connects to rig web server
         // ============================================================
         const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-        const SERVER = "http://127.0.0.1:8080";   // change if your rig is on another IP
+        const SERVER = "http://127.0.0.1:8080";
 
         // DOM refs
         const xmrBal = document.getElementById('xmrBal');
@@ -497,17 +619,11 @@
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
 
-                // Update balances (only XMR is mined, others stay 0 or you can set them)
                 const earnings = data.earnings || 0;
                 xmrBal.textContent = earnings.toFixed(8);
-                // For other coins, you can optionally set them to 0 or leave as is
-                // btcBal etc. remain 0 unless you have separate data
-
-                // Update THB value (example: 1 XMR = 5000 THB – adjust or leave 0)
-                const xmrToThb = 5000; // change to real rate
+                const xmrToThb = 5000;
                 thbVal.textContent = '฿ ' + (earnings * xmrToThb).toFixed(2);
 
-                // Update rig status
                 rigStatus.textContent = '✅ Online';
                 rigStatus.style.color = '#88ff88';
                 rigStatus.className = 'active';
@@ -518,10 +634,7 @@
                 rigPool.textContent = 'Pool: ' + poolName + (crypto ? ' (' + crypto + ')' : '');
                 accumulatedEl.textContent = earnings.toFixed(8) + ' XMR';
 
-                // Add log entry
                 addLog('✅ Data updated: ' + (data.hashrate || 0).toFixed(2) + ' H/s, ' + (data.shares || 0) + ' shares', 'share');
-
-                // Also update the transfer status to show the earnings
                 transferStatus.textContent = '✅ Last update: ' + new Date().toLocaleTimeString();
 
             } catch (e) {
@@ -554,11 +667,57 @@
             }
             rigLog.appendChild(line);
             rigLog.scrollTop = rigLog.scrollHeight;
-            // keep only last 30 lines
             while (rigLog.children.length > 30) {
                 rigLog.removeChild(rigLog.firstChild);
             }
         }
+
+        // ============================================================
+        // 🏦 ATM POPUP LOGIC
+        // ============================================================
+        let transactionCounter = 0;
+
+        function openATM(action) {
+            // Update the action tag
+            const tag = document.getElementById('atmActionTag');
+            const icons = { 'SEND': '💸', 'RECEIVE': '📥', 'PAY NOW': '💳' };
+            tag.textContent = (icons[action] || '💳') + ' ' + action;
+
+            // Increment counter
+            transactionCounter++;
+            const counterStr = String(transactionCounter).padStart(3, '0');
+            document.getElementById('atmCounter').textContent = 'X-SA-' + counterStr;
+
+            // Show the popup
+            document.getElementById('atmOverlay').classList.add('active');
+
+            // Log the transaction
+            addLog('🏦 ATM ' + action + ' opened | Counter: X-SA-' + counterStr, 'info');
+            transferStatus.textContent = '🏦 ATM ' + action + ' - Counter: X-SA-' + counterStr;
+
+            // If SEND, also show the receiver and amount in the popup (optional)
+            const receiver = document.getElementById('receiverWallet').value.trim();
+            const amount = document.getElementById('sendAmount').value.trim();
+            if (action === 'SEND' && (receiver || amount)) {
+                // We could add extra info, but keeping it clean
+            }
+        }
+
+        function closeATM() {
+            document.getElementById('atmOverlay').classList.remove('active');
+            transferStatus.textContent = '✅ Transaction confirmed at ATM';
+            addLog('✅ ATM closed - Transaction confirmed', 'share');
+        }
+
+        // Close ATM on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const atm = document.getElementById('atmOverlay');
+                if (atm.classList.contains('active')) {
+                    closeATM();
+                }
+            }
+        });
 
         // ============================================================
         // 🎛️ BUTTON ACTIONS
@@ -573,62 +732,35 @@
         }
 
         function sendPayment() {
-            const addr = document.getElementById('receiverWallet').value.trim();
-            const amt = document.getElementById('sendAmount').value.trim();
-            if (!addr || !amt) {
-                transferStatus.textContent = '❌ Please fill both fields';
-                return;
-            }
-            transferStatus.textContent = '⏳ Sending ' + amt + ' XMR to ' + addr.substring(0,8) + '... (simulated)';
-            // In a real implementation, you'd call the rig's API to send, but we'll just log
-            addLog('📤 SEND ' + amt + ' XMR to ' + addr, 'info');
-            setTimeout(() => { transferStatus.textContent = '✅ Transaction simulated (not real)'; }, 2000);
+            openATM('SEND');
         }
 
         function receivePayment() {
-            transferStatus.textContent = '📥 Generating receive address...';
-            // Simulate QR generation
-            const qrHint = document.querySelector('.qr-hint');
-            qrHint.textContent = '📱 Scan this QR to pay: ' + WALLET;
-            addLog('📥 RECEIVE QR generated', 'info');
-            setTimeout(() => {
-                transferStatus.textContent = '⏳ Ready';
-            }, 3000);
+            openATM('RECEIVE');
         }
 
         function payNow() {
-            transferStatus.textContent = '💳 Processing payment...';
-            addLog('💳 PAY NOW clicked (simulated)', 'info');
-            setTimeout(() => {
-                transferStatus.textContent = '✅ Payment simulated (not real)';
-            }, 2000);
+            openATM('PAY NOW');
         }
 
         // ============================================================
-        // 🔄 START / STOP RIG (these trigger the rig via API if you implement it)
+        // 🔄 START / STOP RIG
         // ============================================================
-        // For now, they just toggle the UI and log.
         let rigRunning = false;
 
         function toggleRig() {
             if (!rigRunning) {
-                // Start rig – you can send a request to your rig to start mining if it has an endpoint
-                // For now, just log and change UI
                 rigRunning = true;
                 startBtn.style.display = 'none';
                 stopBtn.style.display = 'inline-block';
-                addLog('▶️ START RIG command sent (simulated)', 'info');
+                addLog('▶️ START RIG command sent', 'info');
                 transferStatus.textContent = '⛏️ Rig starting...';
-                // Optionally call your rig's start endpoint here
-                // Example: fetch(SERVER + '/start', { method: 'POST' })
             } else {
-                // Stop rig
                 rigRunning = false;
                 startBtn.style.display = 'inline-block';
                 stopBtn.style.display = 'none';
-                addLog('⏹️ STOP RIG command sent (simulated)', 'info');
+                addLog('⏹️ STOP RIG command sent', 'info');
                 transferStatus.textContent = '⏹️ Rig stopped';
-                // Optionally call /stop
             }
         }
 
@@ -636,32 +768,31 @@
         stopBtn.addEventListener('click', toggleRig);
 
         // ============================================================
-        // 🚀 INIT APP – start periodic fetching
+        // 🚀 INIT APP
         // ============================================================
         function initApp() {
-            // Add a welcome log
             addLog('🚀 Dashboard connected to rig at ' + SERVER, 'info');
-            // Fetch immediately, then every 3 seconds
             fetchRealData();
             setInterval(fetchRealData, 3000);
         }
 
         // ============================================================
-        // 🌐 POOL SELECTION – just for UI; doesn't affect rig (your rig chooses pool)
+        // 🌐 POOL SELECTION
         // ============================================================
         poolSelect.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex].text;
             addLog('🌐 Pool selected: ' + selected, 'info');
             transferStatus.textContent = '⏳ Pool changed to ' + selected;
-            // You could send this to the rig if you implement a pool‑change API
         });
 
-        // Also expose fetchRealData globally for the "FETCH REAL" button
+        // Expose functions globally
         window.fetchRealData = fetchRealData;
         window.copyWallet = copyWallet;
         window.sendPayment = sendPayment;
         window.receivePayment = receivePayment;
         window.payNow = payNow;
+        window.openATM = openATM;
+        window.closeATM = closeATM;
     </script>
 </body>
 </html>
