@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marduk · Real Rig</title>
+    <title>Marduk · ATM + Rig</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -36,6 +36,7 @@
             border-bottom: 2px solid #ffcc00;
         }
         .header .title { color: #ffcc00; font-size: 1.5rem; font-weight: bold; }
+        .header .sub { color: #8da0c0; font-size: 0.8rem; }
         .header .time { color: #8da0c0; font-size: 0.8rem; }
 
         .wallet-box {
@@ -44,9 +45,32 @@
             padding: 0.8rem 1rem;
             border: 1px solid #1a2a4a;
             margin-bottom: 1.5rem;
+            line-height: 1.6;
         }
         .wallet-box .wallet-label { color: #ffcc00; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
-        .wallet-box .wallet-address { color: #88ffaa; font-size: 0.7rem; word-break: break-all; margin: 0.3rem 0; }
+        .wallet-box .wallet-address {
+            color: #88ffaa;
+            font-size: 0.7rem;
+            word-break: break-all;
+            margin: 0.3rem 0;
+        }
+        .wallet-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .wallet-actions .btn-small {
+            background: #0a0e1a;
+            border: 1px solid #1a2a4a;
+            color: #88ffaa;
+            padding: 0.2rem 0.8rem;
+            border-radius: 1rem;
+            font-family: monospace;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .wallet-actions .btn-small:hover { border-color: #ffcc00; color: #ffcc00; }
 
         .balance-grid {
             display: grid;
@@ -63,9 +87,16 @@
             border: 1px solid #1a2a4a;
             text-align: center;
         }
-        .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; }
+        .balance-item .label { color: #8da0c0; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .balance-item .value { color: #88ffaa; font-size: 1rem; font-weight: bold; margin-top: 0.2rem; }
         .balance-item .value.xmr { color: #ff6633; }
+        .balance-item .value.btc { color: #f7931a; }
+        .balance-item .value.bch { color: #8dc351; }
+        .balance-item .value.usdt { color: #26a17b; }
+        .balance-item .value.doge { color: #c2a633; }
+        .balance-item .value.ltc { color: #a5a5a5; }
+        .balance-item .value.eth { color: #627eea; }
+        .balance-item .value.thb { color: #88ff88; }
 
         .btn-group {
             display: flex;
@@ -91,6 +122,54 @@
         .btn.success { border-color: #2a6a3a; color: #88ff88; }
         .btn.danger { border-color: #8a2a2a; color: #ff6666; }
         .btn.primary { border-color: #ffcc00; color: #ffcc00; }
+        .btn.gold { border-color: #ffcc00; color: #ffcc00; }
+
+        .transfer-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1a2a4a;
+        }
+        .transfer-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .transfer-row input {
+            flex: 1;
+            min-width: 100px;
+            background: #010410;
+            border: 1px solid #1a2a4a;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #88ffaa;
+            outline: none;
+        }
+        .transfer-row input::placeholder { color: #4a5a6a; }
+        .transfer-row input:focus { border-color: #ffcc00; }
+
+        .qr-area {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.5rem 0.8rem;
+            background: #010410;
+            border-radius: 2rem;
+            border: 1px dashed #1a2a4a;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: #4a5a6a;
+            flex-wrap: wrap;
+        }
+        .qr-area .qr-icon { font-size: 1.2rem; }
+        .qr-area .qr-hint { color: #8da0c0; word-break: break-all; font-size: 0.7rem; flex: 1; }
+        .transfer-status {
+            margin-top: 0.5rem;
+            font-size: 0.65rem;
+            color: #4a5a6a;
+        }
 
         .counter-section {
             background: #010410;
@@ -152,25 +231,88 @@
             font-size: 0.6rem;
             color: #4a5a6a;
         }
+
+        /* ATM Popup */
+        .atm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+        .atm-overlay.active { display: flex; }
+        .atm-box {
+            background: #0f1322;
+            border: 2px solid #ffcc00;
+            border-radius: 2rem;
+            padding: 2.5rem;
+            max-width: 480px;
+            width: 92%;
+            box-shadow: 0 0 60px rgba(255,204,0,0.15);
+            text-align: center;
+            animation: atmPop 0.3s ease-out;
+        }
+        @keyframes atmPop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .atm-box .atm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .atm-box h2 { color: #ffcc00; font-size: 1.6rem; letter-spacing: 2px; border-bottom: 1px solid #2a3a60; padding-bottom: 0.8rem; margin-bottom: 1.2rem; }
+        .atm-detail { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #1a2a4a; font-size: 0.85rem; }
+        .atm-detail .label { color: #8da0c0; }
+        .atm-detail .value { color: #88ffaa; font-weight: bold; }
+        .atm-detail .value.highlight { color: #ffcc00; }
+        .atm-counter { margin: 1.2rem 0; padding: 0.8rem; background: #010410; border-radius: 1rem; border: 1px solid #1a2a4a; }
+        .atm-counter .count-label { color: #8da0c0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        .atm-counter .count-number { font-size: 2.8rem; font-weight: bold; color: #ffcc00; }
+        .atm-close-btn { margin-top: 1.2rem; background: #2a4a7a; color: white; border: none; padding: 0.8rem 2rem; border-radius: 2rem; font-size: 1rem; cursor: pointer; }
+        .atm-close-btn:hover { background: #3a5a8a; transform: scale(0.96); }
+        .atm-action-tag { display: inline-block; background: #2a6a3a; color: #88ff88; padding: 0.2rem 1rem; border-radius: 1rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; }
+        .atm-box .sub-text { color: #4a5a6a; font-size: 0.6rem; margin-top: 0.8rem; }
     </style>
 </head>
 <body>
 
+<!-- ATM POPUP -->
+<div class="atm-overlay" id="atmOverlay">
+    <div class="atm-box">
+        <div class="atm-icon">🏦</div>
+        <div class="atm-action-tag" id="atmActionTag">💸 SEND</div>
+        <h2>MARDUK ATM</h2>
+        <div class="atm-detail"><span class="label">👤 Account Holder</span><span class="value highlight">Seliim Ahmed</span></div>
+        <div class="atm-detail"><span class="label">🔢 Account Number</span><span class="value">200-4-25879-0</span></div>
+        <div class="atm-detail"><span class="label">💳 Card Number</span><span class="value">5598 8820 2345 3325</span></div>
+        <div class="atm-counter"><div class="count-label">Transaction Counter</div><div class="count-number" id="atmCounter">X-SA-001</div></div>
+        <button class="atm-close-btn" onclick="closeATM()">✅ CONFIRM & CLOSE</button>
+        <div class="sub-text">© 2026 Seliim Ahmed · All Rights Reserved</div>
+    </div>
+</div>
+
 <div class="container">
     <div class="header">
         <div>
-            <span class="title">⚖️ MARDUK · REAL RIG</span>
+            <span class="title">⚖️ MARDUK · ATM + RIG</span>
+            <span class="sub">Real Data from Your Monero Wallet</span>
         </div>
         <div class="time" id="headerTime">--:--:--</div>
     </div>
 
+    <!-- Wallet Display -->
     <div class="wallet-box">
-        <div class="wallet-label">📬 Wallet Address</div>
+        <div class="wallet-label">📬 Your Monero Wallet</div>
         <div class="wallet-address">
             45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb
         </div>
+        <div class="wallet-actions">
+            <button class="btn-small" onclick="copyWallet()">📋 COPY</button>
+            <button class="btn-small" onclick="window.open('https://xmrchain.net/address/45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb','_blank')">🔗 VIEW</button>
+        </div>
     </div>
 
+    <!-- Balances (Real data from rig) -->
     <div class="balance-grid">
         <div class="balance-item"><div class="label">⛏️ Monero (XMR)</div><div class="value xmr" id="xmrBal">0.00000000</div></div>
         <div class="balance-item"><div class="label">📊 Shares</div><div class="value" id="shareDisplay">0</div></div>
@@ -178,13 +320,34 @@
         <div class="balance-item"><div class="label">🚫 Rejected</div><div class="value" id="rejectedDisplay" style="color:#ff6666;">0</div></div>
     </div>
 
-    <div class="btn-group">
-        <button class="btn success" onclick="startRig()">▶ START RIG</button>
-        <button class="btn danger" id="stopBtn" onclick="stopRig()" style="display:none;">⏹ STOP RIG</button>
-        <button class="btn primary" onclick="processSingle()">📥 PROCESS ONE</button>
-        <button class="btn danger" onclick="clearAll()">🗑️ CLEAR</button>
+    <!-- SEND / RECEIVE / PAY -->
+    <div class="transfer-section">
+        <h2 style="color:#ffcc00;font-size:0.85rem;margin-bottom:0.5rem;">💸 SEND / RECEIVE / PAY</h2>
+        <div class="transfer-row">
+            <input type="text" id="receiverWallet" placeholder="Receiver Wallet Address" />
+            <input type="text" id="sendAmount" placeholder="Amount (XMR)" />
+        </div>
+        <div class="btn-group">
+            <button class="btn success" onclick="openATM('SEND')">💸 SEND</button>
+            <button class="btn primary" onclick="openATM('RECEIVE')">📥 RECEIVE</button>
+            <button class="btn gold" onclick="openATM('PAY NOW')">💳 PAY NOW</button>
+        </div>
+        <div class="qr-area">
+            <span class="qr-icon">📱</span>
+            <span class="qr-hint">Scan QR to pay · Click "RECEIVE" to generate</span>
+        </div>
+        <div class="transfer-status" id="transferStatus">⏳ Ready</div>
     </div>
 
+    <!-- Control Buttons -->
+    <div class="btn-group">
+        <button class="btn primary" onclick="fetchRealData()">⟳ FETCH REAL</button>
+        <button class="btn success" onclick="copyWallet()">📋 COPY</button>
+        <button class="btn gold" onclick="startSimulation()">▶ START RIG (SIM)</button>
+        <button class="btn danger" id="stopBtn" onclick="stopSimulation()" style="display:none;">⏹ STOP RIG</button>
+    </div>
+
+    <!-- X-SA Counter -->
     <div class="counter-section">
         <div style="color:#8da0c0;font-size:0.6rem;text-transform:uppercase;letter-spacing:1px;">🔄 X-SA COUNTER</div>
         <div class="counter-number" id="xsaDisplay">X-SA-000</div>
@@ -196,9 +359,10 @@
         </div>
     </div>
 
+    <!-- Rig Log -->
     <div class="rig-log" id="rigLog">
-        ⚖️ Marduk Real Rig<br>
-        ⏳ Click "START RIG" to begin auto-collecting data...
+        ⚖️ Marduk Rig · Waiting for data...<br>
+        🔄 Click "FETCH REAL" to get data from your running rig.
     </div>
 
     <div class="footer">
@@ -208,21 +372,21 @@
 
 <script>
 // ============================================================
-// AUTO-COLLECT RIG LOGIC
+// MARDUK ATM + RIG — Real Data from C++ Rig
 // ============================================================
+
+const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
+const RIG_URL = "http://127.0.0.1:8080/status"; // Your rig's web server
 
 let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0, sent = 0;
 let rigRunning = false;
 let autoInterval = null;
+let simInterval = null;
+let usingRealData = false;
 
-const dataStream = [
-    "BLOCK_12345", "TX_ABCDEF", "MINER_001", "HASH_7890", 
-    "DATA_2025", "SYSTEM_INIT_ERR", "PING_OK", "DATA_CHUNK_A",
-    "AUTH_FAIL_RETRY", "SYS_REBOOT", "MEMPOOL_TX", "BLOCK_HEADER",
-    "TRANSACTION_001", "MERKLE_ROOT", "NONCE_123", "DIFFICULTY_456"
-];
-let streamIndex = 0;
-
+// ============================================================
+// LOGGING
+// ============================================================
 function addLog(msg, type = 'info') {
     const container = document.getElementById('rigLog');
     const time = new Date().toLocaleTimeString();
@@ -235,6 +399,9 @@ function addLog(msg, type = 'info') {
     while (container.children.length > 100) container.removeChild(container.firstChild);
 }
 
+// ============================================================
+// UPDATE DISPLAY
+// ============================================================
 function updateDisplay() {
     document.getElementById('xmrBal').textContent = earned.toFixed(8);
     document.getElementById('shareDisplay').textContent = shares;
@@ -245,8 +412,12 @@ function updateDisplay() {
     document.getElementById('sentCount').textContent = sent;
     document.getElementById('sortedCount').textContent = counter;
     document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3, '0');
+    document.getElementById('transferStatus').textContent = `💰 Wallet: ${earned.toFixed(8)} XMR`;
 }
 
+// ============================================================
+// CLOCK
+// ============================================================
 function updateClocks() {
     const now = new Date().toLocaleTimeString();
     document.getElementById('headerTime').textContent = now;
@@ -254,6 +425,44 @@ function updateClocks() {
 }
 setInterval(updateClocks, 1000);
 updateClocks();
+
+// ============================================================
+// FETCH REAL DATA FROM RIG
+// ============================================================
+async function fetchRealData() {
+    try {
+        const response = await fetch(RIG_URL);
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const data = await response.json();
+        // Update with real rig data
+        shares = data.shares || 0;
+        accepted = data.accepted || 0;
+        rejected = data.rejected || 0;
+        earned = data.earnings || 0;
+        counter = data.counter || 0;
+        sent = data.sent || 0;
+        usingRealData = true;
+        addLog(`✅ Real data fetched: ${shares} shares, ${earned.toFixed(8)} XMR`, 'accepted');
+        updateDisplay();
+        // Also update the rig status to online
+        document.querySelector('.header .sub').textContent = '🟢 Connected to Rig';
+    } catch (e) {
+        usingRealData = false;
+        addLog(`❌ Rig not reachable. Using simulation.`, 'rejected');
+        document.querySelector('.header .sub').textContent = '🔴 Rig Offline (Simulation)';
+    }
+}
+
+// ============================================================
+// SIMULATION MODE (fallback / demo)
+// ============================================================
+const dataStream = [
+    "BLOCK_12345", "TX_ABCDEF", "MINER_001", "HASH_7890",
+    "DATA_2025", "SYSTEM_INIT_ERR", "PING_OK", "DATA_CHUNK_A",
+    "AUTH_FAIL_RETRY", "SYS_REBOOT", "MEMPOOL_TX", "BLOCK_HEADER",
+    "TRANSACTION_001", "MERKLE_ROOT", "NONCE_123", "DIFFICULTY_456"
+];
+let streamIndex = 0;
 
 function hasXMRPattern(binary) {
     const patterns = ['101','110','011','1110','1001','0101','0011','1111'];
@@ -290,7 +499,7 @@ function toACHI(washed) {
     return 'ACHi' + clean;
 }
 
-function processData(raw) {
+function processSimData(raw) {
     if (!raw || !raw.trim()) return;
     const data = raw.trim();
     counter++;
@@ -338,47 +547,88 @@ function processData(raw) {
     updateDisplay();
 }
 
-function processSingle() {
-    if (streamIndex >= dataStream.length) streamIndex = 0;
-    processData(dataStream[streamIndex++]);
-}
-
-function startRig() {
+function startSimulation() {
     if (rigRunning) return;
     rigRunning = true;
-    document.querySelector('.btn.success').style.display = 'none';
+    document.querySelector('.btn.gold').style.display = 'none';
     document.getElementById('stopBtn').style.display = 'inline-block';
-    addLog('▶️ RIG STARTED – auto-collecting', 'info');
+    addLog('▶️ SIMULATION STARTED', 'info');
 
-    autoInterval = setInterval(() => {
+    simInterval = setInterval(() => {
         if (!rigRunning) return;
         if (streamIndex >= dataStream.length) streamIndex = 0;
-        processData(dataStream[streamIndex++]);
+        processSimData(dataStream[streamIndex++]);
     }, 2500);
 }
 
-function stopRig() {
+function stopSimulation() {
     rigRunning = false;
-    clearInterval(autoInterval);
-    document.querySelector('.btn.success').style.display = 'inline-block';
+    clearInterval(simInterval);
+    document.querySelector('.btn.gold').style.display = 'inline-block';
     document.getElementById('stopBtn').style.display = 'none';
-    addLog('⏹️ RIG STOPPED', 'info');
+    addLog('⏹️ SIMULATION STOPPED', 'info');
 }
 
-function clearAll() {
-    if (!confirm('Clear all data?')) return;
-    shares = 0; accepted = 0; rejected = 0; earned = 0; counter = 0; sent = 0;
-    streamIndex = 0;
-    document.getElementById('rigLog').innerHTML = '🗑️ Cleared. Click START RIG to begin.';
-    updateDisplay();
-    addLog('🗑️ All data cleared', 'info');
+// ============================================================
+// ATM FUNCTIONS
+// ============================================================
+let transCounter = 0;
+
+function openATM(action) {
+    const tag = document.getElementById('atmActionTag');
+    const icons = { 'SEND': '💸', 'RECEIVE': '📥', 'PAY NOW': '💳' };
+    tag.textContent = (icons[action] || '💳') + ' ' + action;
+
+    transCounter++;
+    const counterStr = String(transCounter).padStart(3, '0');
+    document.getElementById('atmCounter').textContent = 'X-SA-' + counterStr;
+
+    document.getElementById('atmOverlay').classList.add('active');
+    addLog(`🏦 ATM ${action} opened (X-SA-${counterStr})`, 'info');
+
+    // If SEND, also log the amount if entered
+    if (action === 'SEND') {
+        const receiver = document.getElementById('receiverWallet').value.trim();
+        const amount = document.getElementById('sendAmount').value.trim();
+        if (receiver || amount) {
+            addLog(`📝 SEND to ${receiver || 'unknown'} amount ${amount || '0'} XMR`, 'send');
+        }
+    }
 }
 
+function closeATM() {
+    document.getElementById('atmOverlay').classList.remove('active');
+    addLog('✅ ATM closed', 'accepted');
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (document.getElementById('atmOverlay').classList.contains('active')) closeATM();
+    }
+});
+
+// ============================================================
+// OTHER FUNCTIONS
+// ============================================================
+function copyWallet() {
+    navigator.clipboard.writeText(WALLET).then(() => {
+        document.getElementById('transferStatus').textContent = '✅ Wallet copied!';
+        setTimeout(() => document.getElementById('transferStatus').textContent = '⏳ Ready', 2000);
+    }).catch(() => {
+        document.getElementById('transferStatus').textContent = '❌ Copy failed';
+    });
+}
+
+// ============================================================
 // INIT
-addLog('🚀 Marduk Rig ready', 'info');
-addLog('💡 Click "START RIG" to auto-collect data', 'info');
+// ============================================================
+addLog('🚀 Marduk ATM + Rig ready', 'info');
+addLog('💡 Click "FETCH REAL" to pull data from your running rig.', 'info');
+addLog('💡 Or click "START RIG (SIM)" for demo mode.', 'info');
 updateDisplay();
-</script>
 
+// Try to fetch real data immediately on load
+setTimeout(fetchRealData, 1000);
+</script>
 </body>
 </html>
