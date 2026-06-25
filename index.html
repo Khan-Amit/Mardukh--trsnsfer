@@ -176,7 +176,23 @@ function updateClocks(){
 }
 setInterval(updateClocks,1000); updateClocks();
 
-function fetchRealData(){ addLog('Fetching... (standalone)','info'); }
+function fetchRealData(){
+    addLog('Fetching real data from rig...','info');
+    // If rig is running, fetch from /status
+    fetch('/status').then(r=>r.json()).then(data=>{
+        if(data.shares !== undefined){
+            shares = data.shares || 0;
+            accepted = data.accepted || 0;
+            rejected = data.rejected || 0;
+            counter = data.counter || 0;
+            earned = data.earnings || 0;
+            updateDisplay();
+            addLog('Data updated from rig','accepted');
+        }
+    }).catch(()=>{
+        addLog('Rig offline – standalone mode','info');
+    });
+}
 
 function openATM(action){
     const tag=document.getElementById('atmActionTag');
@@ -185,8 +201,10 @@ function openATM(action){
     txCounter++;
     const txId='X-SA-'+String(txCounter).padStart(3,'0');
     document.getElementById('atmTxId').textContent=txId;
+    // also update main X-SA counter
     counter++;
     document.getElementById('xsaDisplay').textContent='X-SA-'+String(counter).padStart(3,'0');
+    // log and update stats
     if(action==='SEND'){
         const rec=document.getElementById('receiverWallet').value.trim()||'unknown';
         const amt=document.getElementById('sendAmount').value.trim()||'0';
@@ -204,8 +222,13 @@ function openATM(action){
     document.getElementById('atmOverlay').classList.add('active');
     addLog('ATM '+action+' opened ('+txId+')','info');
 }
-function closeATM(){ document.getElementById('atmOverlay').classList.remove('active'); addLog('ATM closed','accepted'); }
-document.addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getElementById('atmOverlay').classList.contains('active')) closeATM(); });
+function closeATM(){
+    document.getElementById('atmOverlay').classList.remove('active');
+    addLog('ATM closed','accepted');
+}
+document.addEventListener('keydown',function(e){
+    if(e.key==='Escape' && document.getElementById('atmOverlay').classList.contains('active')) closeATM();
+});
 
 function copyWallet(){
     navigator.clipboard.writeText(WALLET).then(()=>{
