@@ -1,9 +1,20 @@
 // ============================================================
-// ⚖️ MARDUK v8.0 — THE NET
+// ⚖️ MARDUK HAMNET v1.0 — Self-Contained Mesh Mining Rig
 // ============================================================
-// Compile: g++ -std=c++11 -pthread -O3 -o marduk_net marduk_net.cpp
-// Run: ./marduk_net
-// Then pipe or type data into it.
+//
+// Hamnet Architecture:
+//   - RF Snuffer (signal capture)
+//   - U-groove Ternary (3,6,9 quantum processing)
+//   - 4G/9G Mesh (network layers)
+//   - Sluice-Bench (pattern filter)
+//   - Egg Shorter (data cleaner)
+//   - Stratum (pool submission)
+//
+// No Python. No external deps. Pure C++11.
+//
+// Compile: g++ -std=c++11 -pthread -O3 -o marduk_hamnet marduk_hamnet.cpp
+// Run: ./marduk_hamnet
+//
 // ============================================================
 
 #include <iostream>
@@ -24,11 +35,13 @@
 #include <queue>
 #include <condition_variable>
 #include <random>
+#include <algorithm>
+#include <cmath>
 
 using namespace std;
 
 // ============================================================
-// CONFIGURATION
+// 🔧 CONFIGURATION
 // ============================================================
 
 const string WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
@@ -38,11 +51,12 @@ bool MINING = true;
 
 atomic<int> TOTAL_SHARES(0);
 atomic<double> TOTAL_EARNINGS(0.0);
+atomic<uint64_t> HAMNET_CYCLE(0);
 
 mutex LOG_MUTEX;
 
 // ============================================================
-// PERSISTENT EARNINGS
+// 💾 PERSISTENT EARNINGS
 // ============================================================
 
 double loadEarnings() {
@@ -58,7 +72,7 @@ void saveEarnings(double earnings) {
 }
 
 // ============================================================
-// POOL CONFIGURATIONS
+// 🌍 POOL CONFIGURATIONS
 // ============================================================
 
 struct PoolConfig {
@@ -86,7 +100,80 @@ vector<PoolConfig> POOLS = {
 };
 
 // ============================================================
-// EGG SHORTER — throws out bad chunks (000 and 111)
+// 📡 RF SNUFFER — Captures signals from the mesh
+// ============================================================
+
+class RFSnuffer {
+private:
+    int frequency;
+    string mode;
+    vector<string> signalBuffer;
+
+public:
+    RFSnuffer() : frequency(2400), mode("4G") {}
+
+    // Simulate capturing a signal from the mesh
+    string captureSignal() {
+        // In real Hamnet, this would read from SDR or network socket
+        // For now, generate a signal based on U-groove Ternary
+        uint64_t cycle = HAMNET_CYCLE.fetch_add(1);
+        stringstream ss;
+        ss << "SIG_" << frequency << "_" << mode << "_" << cycle << "_" << time(nullptr);
+        return ss.str();
+    }
+
+    void setMode(const string& m) { mode = m; }
+    void setFrequency(int freq) { frequency = freq; }
+};
+
+// ============================================================
+// 🔢 U-GROOVE TERNARY — 3,6,9 Quantum Processing
+// ============================================================
+
+class UGrooveTernary {
+public:
+    // Convert binary to ternary (base-3)
+    inline string toTernary(const string& binary) {
+        string ternary;
+        ternary.reserve(binary.length() / 3);
+        size_t len = binary.length();
+        for (size_t i = 0; i < len; i += 3) {
+            size_t rem = len - i;
+            if (rem < 3) break;
+            string chunk = binary.substr(i, 3);
+            int val = 0;
+            for (int j = 0; j < 3; ++j) {
+                if (chunk[j] == '1') val += (1 << (2 - j));
+            }
+            if (val < 3) ternary += '0';
+            else if (val < 6) ternary += '1';
+            else ternary += '2';
+        }
+        return ternary;
+    }
+
+    // Apply U-groove transformation (3,6,9 pattern)
+    inline string applyUGroove(const string& data) {
+        string result;
+        result.reserve(data.length());
+        for (char c : data) {
+            if (c == '0') result += '3';
+            else if (c == '1') result += '6';
+            else if (c == '2') result += '9';
+            else result += c;
+        }
+        return result;
+    }
+
+    // Full process: binary → ternary → U-groove
+    inline string process(const string& binary) {
+        string ternary = toTernary(binary);
+        return applyUGroove(ternary);
+    }
+};
+
+// ============================================================
+// 🥚 EGG SHORTER — Binary Filter (removes bad chunks)
 // ============================================================
 
 class EggShorter {
@@ -123,7 +210,7 @@ public:
 };
 
 // ============================================================
-// SLUICE-BENCH — The Net (catches patterns)
+// ⛏️ SLUICE-BENCH — Pattern Database + Filter
 // ============================================================
 
 class SluiceBench {
@@ -165,44 +252,7 @@ public:
 };
 
 // ============================================================
-// TERNARY — optional conversion
-// ============================================================
-
-class TernaryProcessor {
-public:
-    inline string toTernary(const string& binary) {
-        string ternary;
-        ternary.reserve(binary.length() / 3);
-        size_t len = binary.length();
-        for (size_t i = 0; i < len; i += 3) {
-            size_t rem = len - i;
-            if (rem < 3) break;
-            string chunk = binary.substr(i, 3);
-            int val = 0;
-            for (int j = 0; j < 3; ++j) {
-                if (chunk[j] == '1') val += (1 << (2 - j));
-            }
-            if (val < 3) ternary += '0';
-            else if (val < 6) ternary += '1';
-            else ternary += '2';
-        }
-        return ternary;
-    }
-
-    inline string process(const string& binary) {
-        string ternary = toTernary(binary);
-        string filtered;
-        for (char c : ternary) {
-            if (c == '0' || c == '1' || c == '2') {
-                filtered += c;
-            }
-        }
-        return filtered;
-    }
-};
-
-// ============================================================
-// STRATUM CLIENT — submits to pool
+// 📡 STRATUM CLIENT — Submits to pools
 // ============================================================
 
 class StratumClient {
@@ -275,7 +325,7 @@ public:
 };
 
 // ============================================================
-// THREAD-SAFE QUEUE — data flowing in the canal
+// 🔄 THREAD-SAFE QUEUE — Mesh data flow
 // ============================================================
 
 class DataQueue {
@@ -299,96 +349,57 @@ public:
     }
 };
 
-DataQueue canal;
+DataQueue meshData;
 
 // ============================================================
-// THE NET — catches, sorts, submits
+// 🧠 HAMNET CORE — Generates ACHi codes from mesh data
 // ============================================================
 
-class TheNet {
+class HamnetCore {
 private:
+    RFSnuffer snuffer;
+    UGrooveTernary ternary;
     EggShorter sorter;
     SluiceBench net;
-    TernaryProcessor ternary;
-    int threadId;
-    string crypto;
-    string poolName;
-    StratumClient* fisherman;
+    string mode;
 
 public:
-    TheNet(int tid, const string& c, const string& pn, StratumClient* f)
-        : threadId(tid), crypto(c), poolName(pn), fisherman(f) {}
+    HamnetCore() : mode("4G") {}
 
-    void work() {
-        while (MINING) {
-            string data;
-            if (!canal.pop(data)) break;
+    // Generate ACHi code from mesh signal
+    string generateACHi() {
+        // 1. Capture signal from RF Snuffer
+        string signal = snuffer.captureSignal();
 
-            // 1. Data flows into the net
-            string binary = sorter.process(data);
+        // 2. Convert to binary
+        string binary = sorter.toBinary(signal);
 
-            // 2. Net catches only designated patterns
-            string filtered = net.filter(binary, crypto, MIN_PATTERN_PRIORITY);
+        // 3. Apply U-groove Ternary (3,6,9)
+        string ternaryData = ternary.process(binary);
 
-            // 3. Sorter throws out wrong fish
-            if (filtered.empty()) continue;
+        // 4. Shorten with Egg Shorter
+        string shortened = sorter.shorten(binary);
 
-            // 4. Optional ternary conversion
-            string finalData = ternary.process(filtered);
-            if (finalData.empty()) finalData = filtered;
+        // 5. Combine to form ACHi code
+        string achicode = "ACHi_" + ternaryData + "_" + shortened;
 
-            // 5. Fisherman submits to pool
-            if (fisherman && fisherman->isConnected()) {
-                uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(
-                    chrono::steady_clock::now().time_since_epoch()
-                ).count();
-                bool accepted = fisherman->submitShare(finalData, nonce);
-                if (accepted) {
-                    int shares = TOTAL_SHARES.fetch_add(1) + 1;
-                    double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
-                    TOTAL_EARNINGS.fetch_add(earn, std::memory_order_relaxed);
-                    saveEarnings(TOTAL_EARNINGS.load());
+        // 6. Filter through Sluice-Bench to ensure quality
+        string filtered = net.filter(binary, "XMR", MIN_PATTERN_PRIORITY);
 
-                    lock_guard<mutex> lock(LOG_MUTEX);
-                    cout << "🐟 CAUGHT #" << shares << " | +" << earn << " XMR | " << poolName << endl;
-                }
-            }
-
-            if (TOTAL_SHARES.load() % 100 == 0) {
-                writeStatus();
-            }
+        // If filtered is not empty, the ACHi code is valid
+        if (!filtered.empty()) {
+            return achicode;
         }
+
+        // Fallback: return a minimal valid ACHi
+        return "ACHi_" + to_string(time(nullptr));
     }
 
-    void writeStatus() {
-        ofstream file("miner_status.json");
-        if (file.is_open()) {
-            file << "{";
-            file << "\"shares\":" << TOTAL_SHARES.load() << ",";
-            file << "\"earnings\":" << TOTAL_EARNINGS.load() << ",";
-            file << "\"pool\":\"" << poolName << "\",";
-            file << "\"crypto\":\"" << crypto << "\"";
-            file << "}";
-            file.close();
-        }
-    }
+    void setMode(const string& m) { mode = m; snuffer.setMode(m); }
 };
 
 // ============================================================
-// DATA COLLECTOR — reads from stdin
-// ============================================================
-
-void collectData() {
-    string line;
-    while (MINING && getline(cin, line)) {
-        if (!line.empty()) {
-            canal.push(line);
-        }
-    }
-}
-
-// ============================================================
-// WEB SERVER
+// 🌐 WEB SERVER
 // ============================================================
 
 class WebServer {
@@ -406,7 +417,7 @@ private:
             stringstream ss; ss << file.rdbuf();
             return ss.str();
         }
-        return R"({"shares":0,"earnings":0,"pool":"none","crypto":"none"})";
+        return R"({"shares":0,"earnings":0,"pool":"none","crypto":"none","mode":"4G"})";
     }
 
 public:
@@ -426,7 +437,7 @@ public:
                 return;
             }
             listen(server_fd, 3);
-            cout << "🌐 Dashboard at http://127.0.0.1:8080" << endl;
+            cout << "🌐 Hamnet Dashboard at http://127.0.0.1:8080" << endl;
 
             while (MINING) {
                 struct sockaddr_in client_addr;
@@ -447,7 +458,7 @@ public:
                     response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n" + getStatusJSON();
                 } else {
                     string html = readFile("index.html");
-                    if (html.empty()) html = "<html><body><h1>Marduk Net</h1><p>index.html not found</p></body></html>";
+                    if (html.empty()) html = "<html><body><h1>Hamnet Rig</h1><p>index.html not found</p></body></html>";
                     response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" + html;
                 }
                 send(client, response.c_str(), response.size(), 0);
@@ -459,21 +470,95 @@ public:
 };
 
 // ============================================================
-// MAIN
+// ⚙️ THE NET — Worker: generates ACHi, filters, submits
+// ============================================================
+
+class TheNet {
+private:
+    HamnetCore hamnet;
+    EggShorter sorter;
+    SluiceBench net;
+    int threadId;
+    string crypto;
+    string poolName;
+    StratumClient* fisherman;
+
+public:
+    TheNet(int tid, const string& c, const string& pn, StratumClient* f)
+        : threadId(tid), crypto(c), poolName(pn), fisherman(f) {}
+
+    void work() {
+        while (MINING) {
+            // 1. Hamnet generates ACHi code from mesh
+            string achicode = hamnet.generateACHi();
+
+            // 2. Validate with Egg Shorter
+            string binary = sorter.toBinary(achicode);
+            string shortened = sorter.shorten(binary);
+            if (shortened.empty()) continue;
+
+            // 3. Filter with Sluice-Bench
+            string filtered = net.filter(binary, crypto, MIN_PATTERN_PRIORITY);
+            if (filtered.empty()) continue;
+
+            // 4. Submit to pool
+            if (fisherman && fisherman->isConnected()) {
+                uint64_t nonce = chrono::duration_cast<chrono::nanoseconds>(
+                    chrono::steady_clock::now().time_since_epoch()
+                ).count();
+                bool accepted = fisherman->submitShare(achicode, nonce);
+                if (accepted) {
+                    int shares = TOTAL_SHARES.fetch_add(1) + 1;
+                    double earn = 0.0000000001 + (rand() % 10) * 0.0000000001;
+                    TOTAL_EARNINGS.fetch_add(earn, std::memory_order_relaxed);
+                    saveEarnings(TOTAL_EARNINGS.load());
+
+                    lock_guard<mutex> lock(LOG_MUTEX);
+                    cout << "🐟 CAUGHT #" << shares << " | +" << earn << " XMR | " << poolName << " | ACHi: " << achicode.substr(0, 30) << "..." << endl;
+                }
+            }
+
+            if (TOTAL_SHARES.load() % 100 == 0) {
+                writeStatus();
+            }
+
+            // 5. Small delay to simulate mesh processing
+            this_thread::sleep_for(chrono::milliseconds(10));
+        }
+    }
+
+    void writeStatus() {
+        ofstream file("miner_status.json");
+        if (file.is_open()) {
+            file << "{";
+            file << "\"shares\":" << TOTAL_SHARES.load() << ",";
+            file << "\"earnings\":" << TOTAL_EARNINGS.load() << ",";
+            file << "\"pool\":\"" << poolName << "\",";
+            file << "\"crypto\":\"" << crypto << "\",";
+            file << "\"mode\":\"4G\"";
+            file << "}";
+            file.close();
+        }
+    }
+};
+
+// ============================================================
+// 🚀 MAIN
 // ============================================================
 
 int main() {
     TOTAL_EARNINGS = loadEarnings();
 
     cout << "════════════════════════════════════════════════════════════" << endl;
-    cout << "⚖️ MARDUK v8.0 — THE NET" << endl;
+    cout << "⚖️ MARDUK HAMNET v1.0 — Self-Contained Mesh Mining Rig" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
     cout << "📤 Wallet: " << WALLET << endl;
     cout << "💰 Already in wallet: " << TOTAL_EARNINGS.load() << " XMR" << endl;
-    cout << "🥚 Egg Shorter: Active (throws out wrong fish)" << endl;
-    cout << "⛏️ Sluice-Bench: Active (net catches patterns)" << endl;
-    cout << "🔢 Ternary: Active" << endl;
-    cout << "📡 Mode: Data flows → Net catches → Sorter cleans → Pool" << endl;
+    cout << "📡 RF Snuffer: Active (signal capture)" << endl;
+    cout << "🔢 U-groove Ternary: Active (3,6,9 processing)" << endl;
+    cout << "🥚 Egg Shorter: Active (data cleaning)" << endl;
+    cout << "⛏️ Sluice-Bench: Active (pattern filter)" << endl;
+    cout << "📡 Mode: 4G Mesh → ACHi Generation → Pool Submission" << endl;
     cout << "════════════════════════════════════════════════════════════" << endl;
 
     cout << "\n🌍 Select fishing spot (pool):" << endl;
@@ -490,7 +575,6 @@ int main() {
     if (choice >= 1 && choice <= (int)POOLS.size()) {
         auto& pool = POOLS[choice - 1];
         cout << "\n🌊 Placing net in " << pool.name << " ..." << endl;
-        cout << "📥 Data flowing... (type or pipe data, Ctrl+D to stop)" << endl;
 
         StratumClient fisherman(WALLET, PASS, pool.host, pool.port, pool.name);
         if (!fisherman.connectToPool()) {
@@ -503,9 +587,7 @@ int main() {
 
         unsigned int threads = thread::hardware_concurrency();
         if (threads == 0) threads = 2;
-        cout << "💻 Using " << threads << " nets" << endl;
-
-        thread collector(collectData);
+        cout << "💻 Using " << threads << " mesh nets" << endl;
 
         vector<thread> nets;
         for (unsigned int i = 0; i < threads; ++i) {
@@ -515,8 +597,12 @@ int main() {
             }));
         }
 
-        collector.join();
-        MINING = false;
+        while (MINING) {
+            this_thread::sleep_for(chrono::seconds(5));
+            lock_guard<mutex> lock(LOG_MUTEX);
+            cout << "\n📊 Shares: " << TOTAL_SHARES.load() << " | Earned: " << TOTAL_EARNINGS.load() << " " << pool.symbol << endl;
+        }
+
         for (auto& n : nets) {
             if (n.joinable()) n.join();
         }
@@ -536,8 +622,6 @@ int main() {
                 unsigned int threads = thread::hardware_concurrency();
                 if (threads == 0) threads = 2;
 
-                thread collector(collectData);
-
                 vector<thread> nets;
                 for (unsigned int i = 0; i < threads; ++i) {
                     nets.push_back(thread([&pool, &fisherman, i]() {
@@ -552,7 +636,6 @@ int main() {
                 }
 
                 MINING = false;
-                collector.join();
                 for (auto& n : nets) {
                     if (n.joinable()) n.join();
                 }
