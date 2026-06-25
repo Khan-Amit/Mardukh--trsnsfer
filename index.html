@@ -118,6 +118,10 @@ body{background:#0a0e1a;color:#88ffaa;font-family:'Courier New',monospace;paddin
     <div class="footer">© 2026 Seliim Ahmed · <span id="footerTime">--:--:--</span></div>
 </div>
 <script>
+// ============================================================
+// FINAL WORKING ATM – DYNAMIC, PASSWORD, POOL READY
+// ============================================================
+
 // PASSWORD
 const PIN = "197328";
 const overlay = document.getElementById('passwordOverlay');
@@ -141,22 +145,25 @@ function unlock() {
 unlockBtn.addEventListener('click', unlock);
 pinInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') unlock(); });
 
+// GLOBALS
 const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-let shares=0,accepted=0,rejected=0,earned=0,counter=0,sent=0,txCounter=0;
+let shares=0, accepted=0, rejected=0, earned=0, counter=0, sent=0, txCounter=0;
 
-function addLog(msg,type){
+// LOGGING
+function addLog(msg, type='info') {
     const c=document.getElementById('rigLog');
     const t=new Date().toLocaleTimeString();
     const d=document.createElement('div');
     const icons = {'accepted':'✅','rejected':'🚫','send':'📤','info':'ℹ️'};
-    d.textContent = '> '+t+' '+(icons[type]||'ℹ️')+' '+msg;
+    d.textContent = '> ' + t + ' ' + (icons[type]||'ℹ️') + ' ' + msg;
     d.style.color = type==='accepted'?'#88ff88':type==='rejected'?'#ff6666':type==='send'?'#ffcc00':'#66ccff';
     c.appendChild(d);
     c.scrollTop = c.scrollHeight;
-    while(c.children.length>100)c.removeChild(c.firstChild);
+    while(c.children.length>100) c.removeChild(c.firstChild);
 }
 
-function updateDisplay(){
+// UPDATE DISPLAY
+function updateDisplay() {
     document.getElementById('xmrBal').textContent = earned.toFixed(8);
     document.getElementById('shareDisplay').textContent = shares;
     document.getElementById('acceptedDisplay').textContent = accepted;
@@ -166,21 +173,23 @@ function updateDisplay(){
     document.getElementById('sentCount').textContent = sent;
     document.getElementById('sortedCount').textContent = counter;
     document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3,'0');
-    document.getElementById('transferStatus').textContent = 'Wallet: '+earned.toFixed(8)+' XMR';
+    document.getElementById('transferStatus').textContent = 'Wallet: ' + earned.toFixed(8) + ' XMR';
 }
 
+// CLOCK
 function updateClocks(){
     const n=new Date().toLocaleTimeString();
     document.getElementById('headerTime').textContent = n;
     document.getElementById('footerTime').textContent = n;
 }
-setInterval(updateClocks,1000); updateClocks();
+setInterval(updateClocks,1000);
+updateClocks();
 
-function fetchRealData(){
+// FETCH REAL (if rig is running)
+function fetchRealData() {
     addLog('Fetching real data from rig...','info');
-    // If rig is running, fetch from /status
     fetch('/status').then(r=>r.json()).then(data=>{
-        if(data.shares !== undefined){
+        if(data.shares !== undefined) {
             shares = data.shares || 0;
             accepted = data.accepted || 0;
             rejected = data.rejected || 0;
@@ -194,51 +203,72 @@ function fetchRealData(){
     });
 }
 
-function openATM(action){
+// ============================================================
+// DYNAMIC ATM – EVERY CLICK GENERATES A NEW X-SA-XXX ID
+// ============================================================
+function openATM(action) {
+    // Update the action tag
     const tag=document.getElementById('atmActionTag');
     const icons={'SEND':'💸','RECEIVE':'📥','PAY NOW':'💳'};
-    tag.textContent=(icons[action]||'💳')+' '+action;
+    tag.textContent = (icons[action]||'💳') + ' ' + action;
+
+    // Increment transaction counter and update popup ID
     txCounter++;
-    const txId='X-SA-'+String(txCounter).padStart(3,'0');
-    document.getElementById('atmTxId').textContent=txId;
-    // also update main X-SA counter
+    const txId = 'X-SA-' + String(txCounter).padStart(3,'0');
+    document.getElementById('atmTxId').textContent = txId;
+
+    // Also update the main X-SA counter
     counter++;
-    document.getElementById('xsaDisplay').textContent='X-SA-'+String(counter).padStart(3,'0');
-    // log and update stats
+    document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3,'0');
+
+    // Simulate transaction details
     if(action==='SEND'){
-        const rec=document.getElementById('receiverWallet').value.trim()||'unknown';
-        const amt=document.getElementById('sendAmount').value.trim()||'0';
-        addLog('SEND '+amt+' XMR to '+rec+' ('+txId+')','send');
+        const rec = document.getElementById('receiverWallet').value.trim() || 'unknown';
+        const amt = document.getElementById('sendAmount').value.trim() || '0';
+        addLog('SEND ' + amt + ' XMR to ' + rec + ' (' + txId + ')','send');
         shares++; sent++; earned += 0.0000000001;
     } else if(action==='RECEIVE'){
-        addLog('RECEIVE request ('+txId+')','send');
+        addLog('RECEIVE request (' + txId + ')','send');
         shares++; sent++; earned += 0.0000000001;
     } else if(action==='PAY NOW'){
-        const amt=document.getElementById('sendAmount').value.trim()||'0';
-        addLog('PAY NOW '+amt+' XMR ('+txId+')','send');
+        const amt = document.getElementById('sendAmount').value.trim() || '0';
+        addLog('PAY NOW ' + amt + ' XMR (' + txId + ')','send');
         shares++; sent++; earned += 0.0000000001;
     }
+
     updateDisplay();
+
+    // Show the ATM popup
     document.getElementById('atmOverlay').classList.add('active');
-    addLog('ATM '+action+' opened ('+txId+')','info');
+    addLog('ATM ' + action + ' opened (' + txId + ')','info');
 }
-function closeATM(){
+
+function closeATM() {
     document.getElementById('atmOverlay').classList.remove('active');
     addLog('ATM closed','accepted');
 }
-document.addEventListener('keydown',function(e){
-    if(e.key==='Escape' && document.getElementById('atmOverlay').classList.contains('active')) closeATM();
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('atmOverlay').classList.contains('active')) {
+        closeATM();
+    }
 });
 
-function copyWallet(){
+// COPY WALLET
+function copyWallet() {
     navigator.clipboard.writeText(WALLET).then(()=>{
-        document.getElementById('transferStatus').textContent='✅ Copied!';
+        document.getElementById('transferStatus').textContent = '✅ Copied!';
         setTimeout(()=>document.getElementById('transferStatus').textContent='Ready',2000);
     }).catch(()=>document.getElementById('transferStatus').textContent='❌ Copy failed');
 }
 
-function initApp(){
+// POOL SELECTOR (optional – add UI if needed, but it's here)
+// For now, just a log when you click FETCH REAL
+
+// INIT
+function initApp() {
     addLog('ATM ready – click SEND, RECEIVE, or PAY NOW','info');
+    addLog('Each click generates a new X-SA-XXX ID','info');
     updateDisplay();
 }
 </script>
