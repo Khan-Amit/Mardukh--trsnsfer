@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marduk · Full Rig + ATM</title>
+    <title>Marduk · Real Rig + ATM</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -310,7 +310,7 @@
 <div class="container">
     <div class="header">
         <div>
-            <span class="title">⚖️ MARDUK · FULL RIG + ATM</span>
+            <span class="title">⚖️ MARDUK · REAL RIG + ATM</span>
             <span class="sub">Real Data from Your Running Rig</span>
         </div>
         <div class="time" id="headerTime">--:--:--</div>
@@ -396,7 +396,7 @@
             <div class="stat"><div class="label">📦 Packets</div><div class="value" id="packetCount">0</div></div>
             <div class="stat"><div class="label">📤 Sent</div><div class="value" id="sentCount">0</div></div>
             <div class="stat"><div class="label">⏳ Sorted</div><div class="value" id="sortedCount">0</div></div>
-            <div class="stat"><div class="label">💰 Earned</div><div class="value" id="earnedDisplay">0.00000000</div></div>
+            <div class="stat"><div class="label">💰 Real Earnings</div><div class="value" id="earnedDisplay">0.00000000</div></div>
         </div>
     </div>
 
@@ -422,7 +422,6 @@ const RIG_URL = "http://127.0.0.1:8080/status";
 let shares = 0, accepted = 0, rejected = 0, earned = 0, counter = 0, sent = 0;
 let rigRunning = false;
 let simInterval = null;
-let usingRealData = false;
 
 // ============================================================
 // LOGGING
@@ -431,7 +430,11 @@ function addLog(msg, type = 'info') {
     const container = document.getElementById('rigLog');
     const time = new Date().toLocaleTimeString();
     const div = document.createElement('div');
-    const icon = type === 'accepted' ? '✅' : type === 'rejected' ? '🚫' : type === 'send' ? '📤' : 'ℹ️';
+    let icon = 'ℹ️';
+    if (type === 'accepted') icon = '✅';
+    else if (type === 'rejected') icon = '🚫';
+    else if (type === 'send') icon = '📤';
+    else if (type === 'pool') icon = '🌐';
     div.textContent = `> ${time} ${icon} ${msg}`;
     div.className = type;
     container.appendChild(div);
@@ -452,7 +455,7 @@ function updateDisplay() {
     document.getElementById('sentCount').textContent = sent;
     document.getElementById('sortedCount').textContent = counter;
     document.getElementById('xsaDisplay').textContent = 'X-SA-' + String(counter).padStart(3, '0');
-    document.getElementById('transferStatus').textContent = `💰 Wallet: ${earned.toFixed(8)} XMR`;
+    document.getElementById('transferStatus').textContent = `💰 Real Earnings: ${earned.toFixed(8)} XMR`;
 }
 
 // ============================================================
@@ -474,18 +477,35 @@ async function fetchRealData() {
         const response = await fetch(RIG_URL);
         if (!response.ok) throw new Error('HTTP ' + response.status);
         const data = await response.json();
+
+        // Update with real rig data
         shares = data.shares || 0;
         accepted = data.accepted || 0;
         rejected = data.rejected || 0;
-        earned = data.earnings || 0;
         counter = data.counter || 0;
         sent = data.sent || 0;
-        usingRealData = true;
-        addLog(`✅ Real data fetched: ${shares} shares, ${earned.toFixed(8)} XMR`, 'accepted');
+
+        // READ REAL POOL RESPONSE AND REAL EARNINGS
+        const poolResponse = data.pool_response || 'unknown';
+        const realEarnings = data.real_earnings || 0;
+
+        // Update earned with REAL earnings from pool
+        earned = realEarnings;
+
+        // Show real pool response in log
+        if (poolResponse === 'accepted') {
+            addLog(`✅ REAL POOL: Accepted share`, 'accepted');
+        } else if (poolResponse === 'rejected') {
+            addLog(`❌ REAL POOL: Rejected share`, 'rejected');
+        } else {
+            addLog(`⚠️ Pool response: ${poolResponse}`, 'info');
+        }
+
+        addLog(`📊 Real earnings: ${earned.toFixed(8)} XMR`, 'accepted');
         updateDisplay();
-        document.querySelector('.header .sub').textContent = '🟢 Connected to Rig';
+        document.querySelector('.header .sub').textContent = '🟢 Connected to Rig (Real Data)';
+
     } catch (e) {
-        usingRealData = false;
         addLog(`❌ Rig not reachable. Using simulation.`, 'rejected');
         document.querySelector('.header .sub').textContent = '🔴 Rig Offline (Simulation)';
     }
@@ -572,14 +592,14 @@ function processSimData(raw) {
     addLog(`🔢 SHORT: ${achicode}`, 'info');
 
     addLog(`📤 SEND: Submitted to pool`, 'send');
-    addLog(`✅ ACCEPT: Pool accepted`, 'accepted');
+    addLog(`✅ SIMULATED POOL: Accepted`, 'accepted');
 
     const earn = 0.0000000001;
     earned += earn;
     shares++;
     accepted++;
     sent++;
-    addLog(`💾 SAVE: +${earn.toFixed(10)} XMR`, 'accepted');
+    addLog(`💾 SAVE: +${earn.toFixed(10)} XMR (simulated)`, 'accepted');
     addLog(`🔄 X-SA: X-SA-${String(num).padStart(3,'0')}`, 'info');
 
     updateDisplay();
@@ -659,7 +679,7 @@ function copyWallet() {
 // Pool selector
 document.getElementById('poolSelect').addEventListener('change', function() {
     const selected = this.options[this.selectedIndex].text;
-    addLog(`🌐 Pool selected: ${selected}`, 'info');
+    addLog(`🌐 Pool selected: ${selected}`, 'pool');
 });
 
 // ============================================================
