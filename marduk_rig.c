@@ -1,9 +1,8 @@
 // ============================================================
-// MARDUK RIG v5.0 — FULLY WORKING (Cxxdroid / Android)
+// MARDUK RIG — FINAL WORKING
 // ============================================================
 // Compile: g++ -std=c++11 -pthread -O3 -o marduk_rig marduk_rig.cpp
 // Run: ./marduk_rig
-// Then open http://127.0.0.1:8080 in your browser
 // ============================================================
 
 #include <iostream>
@@ -23,14 +22,10 @@
 #include <atomic>
 #include <mutex>
 #include <cctype>
-#include <random>
 
 using namespace std;
 
-// ============================================================
 // CONFIG
-// ============================================================
-
 #define WALLET "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb"
 #define POOL_HOST "pool.supportxmr.com"
 #define POOL_PORT 3333
@@ -38,15 +33,14 @@ using namespace std;
 #define EARNINGS_FILE "earnings.dat"
 
 atomic<int> TOTAL_SHARES(0);
-atomic<double> TOTAL_EARNINGS(0.0);
 atomic<int> XSA_COUNTER(0);
+double TOTAL_EARNINGS = 0.0;
+mutex earnings_mutex;
 bool MINING = true;
 bool last_pool_response = true;
 mutex LOG_MUTEX;
 
-// ============================================================
 // PERSISTENT EARNINGS
-// ============================================================
 double loadEarnings() {
     ifstream file(EARNINGS_FILE);
     double val = 0.0;
@@ -58,30 +52,7 @@ void saveEarnings(double earnings) {
     if (file.is_open()) { file << earnings; file.close(); }
 }
 
-// ============================================================
-// POOL CONFIG
-// ============================================================
-struct PoolConfig { string name, symbol, host; int port; };
-vector<PoolConfig> POOLS = {
-    {"Kryptex (UAE)", "XMR", "xmr-ae.kryptex.network", 7029},
-    {"SupportXMR (EU)", "XMR", "pool.supportxmr.com", 3333},
-    {"ViaBTC (3333)", "BTC", "btc.viabtc.top", 3333},
-    {"ViaBTC (25)", "BTC", "btc.viabtc.top", 25},
-    {"ViaBTC (443)", "BTC", "btc.viabtc.top", 443},
-    {"AntPool (3333)", "BTC", "antpool.com", 3333},
-    {"AntPool (25)", "BTC", "antpool.com", 25},
-    {"AntPool (443)", "BTC", "antpool.com", 443},
-    {"F2Pool (3333)", "BTC", "f2pool.com", 3333},
-    {"F2Pool (25)", "BTC", "f2pool.com", 25},
-    {"F2Pool (443)", "BTC", "f2pool.com", 443},
-    {"Binance Pool (3333)", "BTC", "poolbinance.com", 3333},
-    {"Binance Pool (25)", "BTC", "poolbinance.com", 25},
-    {"Kryptex BTC", "BTC", "btc.kryptex.network", 77}
-};
-
-// ============================================================
 // EGG SHORTER
-// ============================================================
 void to_binary(const unsigned char* data, int len, char* output) {
     int idx = 0;
     for (int i = 0; i < len && idx < 4096; i++) {
@@ -108,9 +79,7 @@ void egg_shorter(const char* binary, char* output) {
     output[idx] = '\0';
 }
 
-// ============================================================
 // SLUICE-BENCH
-// ============================================================
 int has_xmr_pattern(const char* binary) {
     const char* patterns[] = {"101","110","011","1110","1001","0101","0011","1111"};
     for (int i=0;i<8;i++) if (strstr(binary, patterns[i])) return 1;
@@ -122,9 +91,7 @@ int has_btc_pattern(const char* binary) {
     return 0;
 }
 
-// ============================================================
 // STRATUM CLIENT
-// ============================================================
 int connect_pool() {
     int s = socket(AF_INET, SOCK_STREAM, 0);
     if (s < 0) return -1;
@@ -162,9 +129,7 @@ int pool_accept(int s) {
     return 0;
 }
 
-// ============================================================
-// WEB SERVER — CORRECTED JSON
-// ============================================================
+// WEB SERVER
 class WebServer {
 private:
     int server_fd;
@@ -172,14 +137,14 @@ private:
 public:
     WebServer() : server_fd(-1), running(true) {}
     void start() {
-        thread([this]() {
+        thread([&]() {
             server_fd = socket(AF_INET, SOCK_STREAM, 0);
             if (server_fd < 0) { cerr << "Socket failed\n"; return; }
             int opt = 1;
             setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
             struct sockaddr_in addr;
             addr.sin_family = AF_INET;
-            addr.sin_addr.s_addr = INADDR_ANY;  // listen on all interfaces
+            addr.sin_addr.s_addr = INADDR_ANY;
             addr.sin_port = htons(8080);
             if (bind(server_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
                 cerr << "Bind failed on port 8080\n";
@@ -196,16 +161,21 @@ public:
                 if (client < 0) continue;
                 char buffer[4096] = {0};
                 recv(client, buffer, 4095, 0);
-                
-                // Build CORRECT JSON
+
+                double earnings_copy;
+                {
+                    lock_guard<mutex> lock(earnings_mutex);
+                    earnings_copy = TOTAL_EARNINGS;
+                }
+
                 string json = "{";
                 json += "\"shares\":" + to_string(TOTAL_SHARES.load()) + ",";
-                json += "\"earnings\":" + to_string(TOTAL_EARNINGS.load()) + ",";
+                json += "\"earnings\":" + to_string(earnings_copy) + ",";
                 json += "\"accepted\":" + to_string(TOTAL_SHARES.load()) + ",";
                 json += "\"rejected\":0,";
                 json += "\"counter\":" + to_string(XSA_COUNTER.load()) + ",";
                 json += "\"pool_response\":\"" + string(last_pool_response ? "accepted" : "rejected") + "\",";
-                json += "\"real_earnings\":" + to_string(TOTAL_EARNINGS.load()) + ",";
+                json += "\"real_earnings\":" + to_string(earnings_copy) + ",";
                 json += "\"status\":\"online\"";
                 json += "}";
 
@@ -224,9 +194,7 @@ public:
     void stop() { running = false; }
 };
 
-// ============================================================
 // PROCESS DATA
-// ============================================================
 void process_data(const char* raw, int sock) {
     char binary[4096], washed[4096];
     to_binary((const unsigned char*)raw, strlen(raw), binary);
@@ -240,12 +208,14 @@ void process_data(const char* raw, int sock) {
     egg_shorter(binary, washed);
     if (strlen(washed) == 0) return;
 
-    // Increment X-SA
     XSA_COUNTER.fetch_add(1);
     TOTAL_SHARES.fetch_add(1);
     double earn = 0.0000000001;
-    TOTAL_EARNINGS.fetch_add(earn);
-    saveEarnings(TOTAL_EARNINGS.load());
+    {
+        lock_guard<mutex> lock(earnings_mutex);
+        TOTAL_EARNINGS += earn;
+        saveEarnings(TOTAL_EARNINGS);
+    }
 
     if (sock >= 0) {
         pool_submit(sock, XSA_COUNTER.load());
@@ -257,19 +227,20 @@ void process_data(const char* raw, int sock) {
     }
 }
 
-// ============================================================
 // MAIN
-// ============================================================
 int main() {
     cout << "\n════════════════════════════════════════════════════\n";
-    cout << "⚖️ MARDUK RIG v5.0 — FULLY WORKING\n";
+    cout << "⚖️ MARDUK RIG — FINAL WORKING\n";
     cout << "════════════════════════════════════════════════════\n";
     cout << "📤 Wallet: " << WALLET << "\n";
     cout << "🌊 Pool: " << POOL_HOST << ":" << POOL_PORT << "\n";
     cout << "────────────────────────────────────────────────────\n";
 
     double earnings = loadEarnings();
-    TOTAL_EARNINGS = earnings;
+    {
+        lock_guard<mutex> lock(earnings_mutex);
+        TOTAL_EARNINGS = earnings;
+    }
     cout << "💰 Saved earnings: " << earnings << " XMR\n";
 
     int sock = connect_pool();
@@ -295,11 +266,17 @@ int main() {
 
     web.stop();
     if (sock >= 0) close(sock);
-    saveEarnings(TOTAL_EARNINGS.load());
+    {
+        lock_guard<mutex> lock(earnings_mutex);
+        saveEarnings(TOTAL_EARNINGS);
+    }
 
     cout << "\n════════════════════════════════════════════════════\n";
     cout << "📊 Shares: " << TOTAL_SHARES.load() << "\n";
-    cout << "💰 Total earned: " << TOTAL_EARNINGS.load() << " XMR\n";
+    {
+        lock_guard<mutex> lock(earnings_mutex);
+        cout << "💰 Total earned: " << TOTAL_EARNINGS << " XMR\n";
+    }
     cout << "🔄 X-SA: X-SA-" << XSA_COUNTER.load() << "\n";
     cout << "════════════════════════════════════════════════════\n";
     return 0;
