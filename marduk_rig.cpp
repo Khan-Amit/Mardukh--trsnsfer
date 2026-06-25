@@ -1,5 +1,5 @@
 // ============================================================
-// ⚖️ MARDUK RIG v5.0 — COMPLETE OPTIMIZED + PERSISTENT
+// ⚖️ MARDUK RIG v5.0 — COMPLETE REAL MINING RIG
 // ============================================================
 //
 // Intellectual Property of Seliim Ahmed
@@ -16,7 +16,6 @@
 //   ✅ 14 Pools (2 XMR + 12 BTC)
 //   ✅ Real Share Submission
 //   ✅ Wallet Integration
-//   ✅ Pattern Database (XMR + BTC)
 //   ✅ PERSISTENT EARNINGS (saves to file)
 //   ✅ STATUS OUTPUT (miner_status.json)
 //
