@@ -454,7 +454,9 @@
         // 📡 ATM LOGIC
         // ============================================================
         const WALLET = "45ktWDeTNtUcVMXfJRKS6bbXMznMAStZFX6niJHcVy9uQk132bHJ21QTC5AKvqyx9XJN5e7mPc3vViyGnB2BM6DD1ZoAoZb";
-        const SERVER_URL = "http://127.0.0.1:8080";
+
+        // ✅ CHANGE THIS IF YOUR SERVER IS ON A DIFFERENT IP/PORT
+        const SERVER_URL = "http://localhost:8080";
 
         const $ = id => document.getElementById(id);
         const xmrBal = $('xmrBal');
@@ -516,12 +518,12 @@
         }
 
         // ============================================================
-        // 🔗 FETCH REAL DATA
+        // 🔗 FETCH REAL DATA FROM RIG
         // ============================================================
         async function fetchRealData() {
             addLog('📡 Fetching real rig data...', 'real');
             try {
-                const res = await fetch(`${SERVER_URL}/status`);
+                const res = await fetch(`${SERVER_URL}/miner_status.json`);
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
 
@@ -547,15 +549,12 @@
             } catch (e) {
                 rigStatus.textContent = '⏹️ Waiting for rig...';
                 rigStatus.style.color = '#ff6666';
-                if (!cachedEarnings) {
-                    // keep showing 0
-                }
                 addLog('⏳ Rig not reachable. Showing cached data.', 'error');
             }
         }
 
         // ============================================================
-        // ▶ START RIG
+        // ▶ START RIG (via server API)
         // ============================================================
         async function startRig() {
             addLog('▶ Starting rig...', 'real');
@@ -566,7 +565,6 @@
                     addLog('✅ Rig started successfully', 'success');
                     startBtn.style.display = 'none';
                     stopBtn.style.display = 'inline-block';
-                    // fetch status after a moment
                     setTimeout(fetchRealData, 2000);
                 } else {
                     addLog('❌ ' + data.message, 'error');
@@ -577,7 +575,7 @@
         }
 
         // ============================================================
-        // ⏹ STOP RIG
+        // ⏹ STOP RIG (via server API)
         // ============================================================
         async function stopRig() {
             addLog('⏹ Stopping rig...', 'real');
@@ -601,7 +599,7 @@
         stopBtn.addEventListener('click', stopRig);
 
         // ============================================================
-        // 💸 TRANSFER FUNCTIONS
+        // 💸 TRANSFER FUNCTIONS (simulated)
         // ============================================================
         function sendPayment() {
             const receiver = receiverWallet.value.trim();
@@ -662,7 +660,9 @@
             addLog('⚖️ Marduk Real Rig v1.0');
             addLog('📡 Waiting for rig data...');
             fetchRealData();
-            setInterval(fetchRealData, 5000); // check every 5s
+
+            // Auto-refresh every 5 seconds
+            setInterval(fetchRealData, 5000);
 
             poolSelect.addEventListener('change', function() {
                 const pool = this.options[this.selectedIndex].text;
